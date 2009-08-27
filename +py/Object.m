@@ -9,41 +9,41 @@ classdef Object < handle
   methods
       function obj = Object(inobj)
           if nargin > 0
-              obj = pymex(py.Interface.SCALAR_TO_PYOBJ, inobj);
+              obj = pymex('SCALAR_TO_PYOBJ', inobj);
           else
               obj.pointer = uint64(0);
           end
       end
       
       function delete(obj)
-          pymex(py.Interface.DELETE_OBJ, obj);
+          pymex('DELETE_OBJ', obj);
       end
       
       function objdir = dir(obj)
-          objdir = pymex(py.Interface.DIR, obj);
+          objdir = pymex('DIR', obj);
       end
       
       function attr = getattr(obj, attrname)
-          attr = pymex(py.Interface.GET_ATTR, obj, attrname);
+          attr = pymex('GET_ATTR', obj, attrname);
       end
       
       function item = getitem(obj, key)
-          item = pymex(py.Interface.GET_ITEM, obj, key);
+          item = pymex('GET_ITEM', obj, key);
       end
       
       function setattr(obj, attrname, val)
-          pymex(py.Interface.SET_ATTR, obj, attrname, val);
+          pymex('SET_ATTR', obj, attrname, val);
       end
       
       function setitem(obj, key, val)
-          pymex(py.Interface.SET_ITEM, obj, key, val);
+          pymex('SET_ITEM', obj, key, val);
       end
       
       function c = char(obj)
           if obj.pointer == uint64(0)
               c = '<null pointer>';
           else
-              c = pymex(py.Interface.TO_STR, obj);
+              c = pymex('TO_STR', obj);
           end
       end
       
@@ -52,7 +52,7 @@ classdef Object < handle
               if obj.pointer == uint64(0)
                   t = py.Object();
               else
-                  t = pymex(py.Interface.GET_TYPE, obj);
+                  t = pymex('GET_TYPE', obj);
               end
               obj.pytype = t;
           else
@@ -70,7 +70,7 @@ classdef Object < handle
               py_kwargs = dict(kwargs);
           end
           py_args = py.tuple(args{:});
-          r = pymex(py.Interface.CALL, obj, py_args, py_kwargs);
+          r = pymex('CALL', obj, py_args, py_kwargs);
       end
       
       function disp(obj)
@@ -91,11 +91,11 @@ classdef Object < handle
       end
       
       function tf = iscallable(obj)
-          tf = pymex(py.Interface.IS_CALLABLE, obj);
+          tf = pymex('IS_CALLABLE', obj);
       end
       
       function tf = isinstance(obj, pytype)
-          tf = pymex(py.Interface.IS_INSTANCE, obj, pytype);
+          tf = pymex('IS_INSTANCE', obj, pytype);
       end
       
       function pstruct = saveobj(obj)

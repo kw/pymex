@@ -1,7 +1,7 @@
 function imp = import(name)
-md = pymex(py.Interface.GET_MODULE_DICT);
+md = pymex('GET_MODULE_DICT');
 try
     imp = md{name};
 catch
-    imp = pymex(py.Interface.IMPORT, name);
+    imp = pymex('IMPORT', name);
 end

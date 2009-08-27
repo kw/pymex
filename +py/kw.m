@@ -15,7 +15,7 @@ classdef kw
         end
         
         function d = dict(kwargs)
-            d = pymex(py.Interface.DICT_FROM_KW, kwargs);
+            d = pymex('DICT_FROM_KW', kwargs);
         end
     end
     
