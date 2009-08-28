@@ -9,8 +9,6 @@ catch %#ok<CTCH>
 end
 clear pymex;
 
-varargin{end+1} = ['MEXEXT=' mexext];
-
 if ~iscellstr(varargin)
     error('make takes string arguments only');
 end
