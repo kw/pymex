@@ -35,6 +35,40 @@ PYMEX(IMPORT, 1,1, {
     plhs[0] = box(pyobj);
   })
 
+PYMEX(IS, 2,2, {
+    if (!mxIsPyObject(prhs[0]) || !mxIsPyObject(prhs[1]))
+      plhs[0] = mxCreateLogicalScalar(0);
+    else
+      plhs[0] = mxCreateLogicalScalar(unbox(prhs[0]) == unbox(prhs[1]));
+  })
+
+PYMEX(TO_BOOL, 1,1, {
+    plhs[0] = mxCreateLogicalScalar(PyObject_IsTrue(unbox(prhs[0])));
+  })
+
+
+#define PYMEX_BIN_OP(name, pyfun)			\
+  PYMEX(name, 2,2, {					\
+      PyObject* L = unboxn(prhs[0]);			\
+      PyObject* R = unboxn(prhs[1]);			\
+      plhs[0] = box(pyfun(L,R));			\
+      Py_XDECREF(L);					\
+      Py_XDECREF(R);					\
+    })
+
+PYMEX_BIN_OP(ADD, PyNumber_Add)
+PYMEX_BIN_OP(SUBTRACT, PyNumber_Subtract)
+PYMEX_BIN_OP(MULTIPLY, PyNumber_Multiply)
+PYMEX_BIN_OP(DIVIDE, PyNumber_Divide)
+PYMEX_BIN_OP(REM, PyNumber_Remainder)
+PYMEX_BIN_OP(MOD, PyNumber_Divmod)
+PYMEX_BIN_OP(BITAND, PyNumber_And)
+PYMEX_BIN_OP(BITOR, PyNumber_Or)
+PYMEX_BIN_OP(BITXOR, PyNumber_Xor)
+#undef PYMEX_BIN_OP
+
+
+
 PYMEX(TO_STR, 1,1, {
     if (!mxIsPyObject(prhs[0]))
       mexErrMsgTxt("argument must be a boxed pyobject");

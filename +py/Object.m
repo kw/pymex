@@ -23,6 +23,50 @@ classdef Object < handle
           objdir = pymex('DIR', obj);
       end
       
+      function tf = is(obj1, obj2)
+          tf = pymex('IS', obj1, obj2);
+      end
+      
+      function c = plus(a, b)
+          c = pymex('ADD', a, b);
+      end
+      
+      function c = minus(a, b)
+          c = pymex('SUBTRACT', a, b);
+      end
+      
+      function c = mtimes(a, b)
+          c = pymex('MULTIPLY', a, b);
+      end
+      
+      function c = mrdivide(a, b)
+          c = pymex('DIVIDE', a, b);
+      end
+      
+      function c = rem(a, b)
+          c = pymex('REM', a, b);
+      end
+      
+      function c = mod(a, b)
+          c = pymex('MOD', a, b);
+      end
+      
+      function c = bitand(a, b)
+          c = pymex('BITAND', a, b);
+      end
+      
+      function c = bitor(a, b)
+          c = pymex('BITOR', a, b);
+      end
+      
+      function c = bitxor(a, b)
+          c = pymex('BITXOR', a, b);
+      end
+      
+      function tf = logical(obj)
+          tf = pymex('TO_BOOL', obj);
+      end
+      
       function attr = getattr(obj, attrname)
           attr = pymex('GET_ATTR', obj, attrname);
       end
