@@ -8,6 +8,7 @@ typedef enum {
 static mxArray* box(const PyObject* pyobj);
 static mxArray* boxb(const PyObject* pyobj);
 static PyObject* unbox (const mxArray* mxobj);
+static PyObject* unboxn (const mxArray* mxobj);
 static bool mxIsPyNull (const mxArray* mxobj);
 static bool mxIsPyObject(const mxArray* mxobj);
 static PyObject* mxChar_to_PyString(const mxArray* mxchar);
@@ -23,9 +24,7 @@ static mxArray* box (const PyObject* pyobj) {
   mxArray* boxed = NULL;
   mexCallMATLAB(1,&boxed,0,NULL,"py.Object");
   if (!pyobj) {
-#if PYMEX_DEBUG
-    mexWarnMsgIdAndTxt("pymex:BoxingNull", "Attempted to box null object.");
-#endif
+    PYMEX_DEBUG("Attempted to box null object.");
   } else {
     mexLock();
     mxArray* ptr_field = mxGetProperty(boxed, 0, "pointer");
@@ -43,15 +42,25 @@ static mxArray* boxb (const PyObject* pyobj) {
 
 static PyObject* unbox (const mxArray* mxobj) {  
   if (mxIsPyNull(mxobj)) {
-#if PYMEX_DEBUG
-    mexWarnMsgIdAndTxt("pymex:UnboxingNull", "Attempt to unbox null object.");
-#endif
+    PYMEX_DEBUG("Attempt to unbox null object.");
     return NULL;
   }
   else {
     UINT64* ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
     return (PyObject*) *ptr;
   }
+}
+
+static PyObject* unboxn (const mxArray* mxobj) {
+  PyObject* pyobj;
+  if (mxIsPyObject(mxobj)) {
+    pyobj = unbox(mxobj);
+    Py_XINCREF(pyobj);
+  }
+  else {
+    pyobj = Any_mxArray_to_PyObject(mxobj, PREFER_SCALAR);
+  }
+  return pyobj;
 }
 
 static bool mxIsPyNull (const mxArray* mxobj) {
