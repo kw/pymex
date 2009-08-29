@@ -117,20 +117,62 @@ classdef Object < handle
           r = pymex('CALL', obj, py_args, py_kwargs);
       end
       
+      function r = abs(obj)
+          r = subsref(obj, substruct('.', '__abs__', '()', {}));
+      end
+      
+      function r = doc(obj)
+          r = subsref(obj, substruct('.', '__doc__'));
+      end
+      
+      function r = hash(obj)
+          r = subsref(obj, substruct('.', '__hash__', '()', {}));
+      end
+      
+      function r = hex(obj)
+          r = subsref(obj, substruct('.', '__hex__', '()', {}));
+      end
+      
+      function r = invert(obj)
+          r = subsref(obj, substruct('.', '__invert__', '()', {}));
+      end
+      
+      function r = oct(obj)
+          r = subsref(obj, substruct('.', '__oct__', '()', {}));
+      end
+      
+      function r = str(obj)
+          r = subsref(obj, substruct('.', '__str__', '()', {}));
+      end
+      
+      function r = len(obj)
+          r = subsref(obj, substruct('.', '__len__', '()', {}));
+      end
+      
+      function r = name(obj)
+          r = subsref(obj, substruct('.', '__name__'));
+      end
+      
       function disp(obj)
           str = char(obj);
+          toolong = 80*24;
+          toomany = 40;
           newlines = strfind(str, char(10));
-          if numel(newlines) > 5
-              fprintf('py.Object %s:\n%s\n...<truncated: too many lines>...\n', char(type(obj)), str(1:newlines(6)-1));
-          elseif numel(str) > 500
-              fprintf('py.Object %s:\n%s\n...<truncated: too long>...\n', char(type(obj)), str(1:255));
+          typename = ['pymex ' char(name(type(obj)))];
+          
+          if numel(newlines) > toomany
+              fprintf('%s:\n%s\n...<truncated: too many lines>...\n', typename, str(1:newlines(toomany)-1));
+          elseif numel(str) > toolong
+              fprintf('%s:\n%s\n...<truncated: too long>...\n', typename, str(1:toolong));
+          elseif numel(newlines) == 0 && numel(str) < 80
+              fprintf('%s: %s\n', typename, str);
           else
-              fprintf('py.Object %s:\n%s\n', char(type(obj)), str);
+              fprintf('%s:\n%s\n', typename, str);             
           end
               
       end
       
-      function n = numel(obj, varargin) %#ok<INUSD>
+      function n = numel(obj, varargin)
           n = 1;
       end
       
