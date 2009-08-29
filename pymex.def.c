@@ -140,7 +140,7 @@ PYMEX(DICT_FROM_KW, 1,1, {
     }
   })
 
-PYMEX(GET_ITEM, 1,1, {
+PYMEX(GET_ITEM, 2,2, {
     PyObject* pyobj = unbox(prhs[0]);
     PyObject* key = Any_mxArray_to_PyObject(prhs[1], PREFER_SCALAR);
     plhs[0] = box(PyObject_GetItem(pyobj, key));

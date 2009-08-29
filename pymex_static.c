@@ -28,8 +28,8 @@ static mxArray* box (const PyObject* pyobj) {
   } else {
     mexLock();
     mxArray* ptr_field = mxGetProperty(boxed, 0, "pointer");
-    UINT64* ptr = mxGetData(ptr_field);
-    *ptr = (UINT64) pyobj;
+    void** ptr = mxGetData(ptr_field);
+    *ptr = (void*) pyobj;
     mxSetProperty(boxed, 0, "pointer", ptr_field);
   }
   return boxed;
@@ -46,7 +46,7 @@ static PyObject* unbox (const mxArray* mxobj) {
     return NULL;
   }
   else {
-    UINT64* ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
+    void** ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
     return (PyObject*) *ptr;
   }
 }
@@ -64,7 +64,7 @@ static PyObject* unboxn (const mxArray* mxobj) {
 }
 
 static bool mxIsPyNull (const mxArray* mxobj) {
-  UINT64* ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
+  void** ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
   return !*ptr;
 }
 

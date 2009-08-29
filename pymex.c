@@ -11,7 +11,7 @@
 #define PYMEX_DEBUG(format, args...) /*nop*/
 #endif
 
-typedef unsigned long long UINT64;
+
 
 /* Macros used during x-macro expansion. */
 
