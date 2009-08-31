@@ -1,4 +1,4 @@
-classdef Object < handle    
+classdef object < handle    
   properties (Hidden)
       pointer
   end
@@ -7,12 +7,8 @@ classdef Object < handle
   end
   
   methods
-      function obj = Object(inobj)
-          if nargin > 0
-              obj = pymex('SCALAR_TO_PYOBJ', inobj);
-          else
-              obj.pointer = uint64(0);
-          end
+      function obj = object(inobj)
+          obj.pointer = uint64(0);
       end
       
       function delete(obj)
@@ -94,7 +90,7 @@ classdef Object < handle
       function t = type(obj)
           if isempty(obj.pytype)              
               if obj.pointer == uint64(0)
-                  t = py.Object();
+                  t = py.types.object();
               else
                   t = pymex('GET_TYPE', obj);
               end
@@ -108,13 +104,7 @@ classdef Object < handle
           iskw = cellfun(@(o) isa(o, 'py.kw'), varargin);
           kwargs = [varargin{iskw}];
           args = varargin(~iskw);
-          if isempty(kwargs)
-              py_kwargs = py.Object;
-          else
-              py_kwargs = dict(kwargs);
-          end
-          py_args = py.tuple(args{:});
-          r = pymex('CALL', obj, py_args, py_kwargs);
+          r = pymex('CALL', obj, args, kwargs);
       end
       
       function r = abs(obj)
@@ -190,91 +180,98 @@ classdef Object < handle
               dumps = getattr(py.import('pickle'), 'dumps');
               pstruct.string = char(call(dumps, obj));
               pstruct.pickled = true;
-          catch
+          catch %#ok<CTCH>
               warning('pyobj:pickle', 'could not pickle object');
           end
       end      
       
       function varargout = subsref(obj, S)
           out = obj;
-          for i = 1:numel(S)
-              switch S(i).type                  
-                  case '.'
-                      out = getattr(out, S(i).subs);
-                  case '()'
-                      out = call(out, S(i).subs{:});
-                  case '{}'
-                      subs = S(i).subs;
-                      % Subscript type kludge.
-                      % Python demands that list indices be integers. But
-                      % mylist{int64(2)} = 5; isn't very aesthetic. So if
-                      % an index is an integral float, convert it
-                      % automatically to int64. 
-                      if isinstance(out, py.builtins('list', 'tuple'))
-                          for s = 1:numel(subs)
-                              if isfloat(subs{s})
-                                  if all(subs{s} - floor(subs{s}) == 0)
-                                      subs{s} = int64(subs{s});
-                                  end
-                              end
-                          end
+          subs = S(1).subs;
+          switch S(1).type
+              case '.'
+                  out = getattr(out, subs);
+              case '()'
+                  out = call(out, subs{:});
+              case '{}'
+                  for s = 1:numel(subs)
+                      if isequal(subs{s}, ':')
+                          subs{s} = py.slice([],[],[]);
                       end
-                      if numel(subs) > 1                          
-                          out = getitem(out, py.tuple(subs{:}));
-                      else                          
-                          out = getitem(out, subs{1});
-                      end
-                  otherwise
-                      error('wtf is "%s" doing in a substruct?', S(i).type);
-              end
+                  end                   
+                  if numel(subs) > 1
+                      out = getitem(out, subs);
+                  else
+                      out = getitem(out, subs{1});
+                  end
+              otherwise
+                  error('wtf is "%s" doing in a substruct?', S(1).type);                  
           end
-          if ~(nargout == 0 && py.none().pointer == out.pointer)
+          if numel(S) > 1
+              out = subsref(out, S(2:end));
+          end          
+          if ~(nargout == 0 && is(py.None, out))
               varargout{1} = out;
           end                  
       end
                
       function obj = subsasgn(obj, S, val)
-          preS = S(1:end-1);
-          S = S(end);
-          if strcmp(S.type, '()')
-              error('PyObject:BadAssign', 'Invalid lvalue. Can''t assign to expression ending in ().');
-          end
-          obj = subsref(obj, preS);          
-          switch S.type
-              case '.'
-                  setattr(obj, S.subs, val);
-              case '{}'
-                  subs = S.subs;
-                  if isinstance(obj, py.builtins('list', 'tuple'))
+          if numel(S) > 1
+              preS = S(1:end-1);
+              S = S(end);
+              if strcmp(S.type, '()')
+                  error('PyObject:BadAssign', 'Invalid lvalue. Can''t assign to expression ending in ().');
+              end
+              endobj = subsref(obj, preS);
+              subsasgn(endobj, S, val);
+          else
+              subs = S.subs;
+              switch S.type
+                  case '.'
+                      setattr(obj, subs, val);
+                  case '{}'
                       for s = 1:numel(subs)
-                          if isfloat(subs{s})
-                              if all(subs{s} - floor(subs{s}) == 0)
-                                  subs{s} = int64(subs{s});
-                              end
+                          if isequal(subs{s}, ':')
+                              subs{s} = py.slice([],[],[]);
                           end
                       end
-                  end
-                  if numel(subs) > 1
-                      setitem(obj, py.tuple(subs{:}), val);
-                  else
-                      setitem(obj, subs{1}, val);
-                  end
-              otherwise
-                  error('wtf is "%s" doing in a substruct?', S.type);
+                      if numel(subs) > 1
+                          setitem(obj, subs, val);
+                      else
+                          setitem(obj, subs{1}, val);
+                      end
+                  otherwise
+                      error('wtf is "%s" doing in a substruct?', S.type);
+              end
           end
-      end                        
+      end
+      
+      function n = colon(a, b, c)
+          if nargin == 2
+              n = py.slice(a, b, []);
+          else
+              n = py.slice(a, c, b);
+          end
+      end
+      
+      function n = end(obj, k, n) %#ok<INUSD>
+          if k > 1
+              warning('pymex:end','End of dimension %d requested, but generic objects don''t have that many.',k);
+          end
+          n = len(obj)-int64(1);
+      end
   end
   
   methods (Static)
       function pyobj = loadobj(pstruct)
           if ~pstruct.pickled
-              pyobj = py.none;
+              pyobj = py.None;
           else
               try
                   loads = getattr(py.import('pickle'), 'loads');
                   pyobj = call(loads, pstruct.string);
-              catch
-                  pyobj = py.none;
+              catch %#ok<CTCH>
+                  pyobj = py.None;
                   warning('pyobj:unpickle', 'could not load pickled object');
               end
           end

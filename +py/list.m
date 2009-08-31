@@ -1,3 +1,3 @@
-function L = list(varargin)
-pyobjs = cellfun(@py.Object, varargin, 'uniformoutput',false);
-L = pymex('TO_LIST', pyobjs);
+function L = list(obj)
+list = py.builtins('list');
+L = list(obj);

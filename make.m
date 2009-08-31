@@ -13,11 +13,14 @@ if ~iscellstr(varargin)
     error('make takes string arguments only');
 end
 
-system(['make ' sprintf('%s ', varargin{:})]);
-
-try
-    c = pymex;
-    fprintf('pymex built with %d system calls.\n', numel(c));
-catch %#ok<CTCH>
-    fprintf(2,'pymex build failed somehow\n');
+status = system(['make ' sprintf('%s ', varargin{:})]);
+if status ~= 0
+    fprintf(2, 'Failed with exit code %d\n', status);
+else
+    try
+        c = pymex;
+        fprintf('pymex built with %d system calls.\n', numel(c));
+    catch %#ok<CTCH>
+        fprintf(2,'pymex build failed somehow\n');
+    end
 end

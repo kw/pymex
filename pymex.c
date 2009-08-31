@@ -129,13 +129,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     mexPutVariable("global", "PYMEX_ERR_TYPE", box(err_type));
     mexPutVariable("global", "PYMEX_ERR_VALUE", box(err_value));
     mexPutVariable("global", "PYMEX_ERR_TRACE", box(err_traceback));
-    if (err_value && PyString_Check(err_value)) {
-      char* msg = PyString_AsString(err_value);
-      mexErrMsgIdAndTxt("pymex:PythonError", "Python said: %s\n(See global PYMEX_ERR_*)", msg);
-    }
-    else {
-      mexErrMsgIdAndTxt("pymex:PythonError", "Error in Python, but wasn't a string value."
-			" See global PYMEX_ERR_*");
+    if (err_value) {
+      PyObject* pyid = PyString_FromString("Python:"); 
+      PyString_ConcatAndDel(&pyid, PyObject_GetAttrString(err_type, "__name__"));
+      PyObject* tuple = Py_BuildValue("ON", pyid, PyObject_Str(err_value));
+      PyObject* format = PyString_FromString("%s -> %s\n");
+      PyObject* pymsg = PyString_Format(format, tuple);
+      char* id = PyString_AsString(pyid);
+      char* msg = PyString_AsString(pymsg);
+      Py_DECREF(pyid);
+      Py_DECREF(tuple);
+      Py_DECREF(format);
+      Py_DECREF(pymsg);
+      mexErrMsgIdAndTxt(id, msg, msg);
     }
     PyErr_Clear();
   }
