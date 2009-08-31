@@ -5,7 +5,7 @@ if nargin > 0
     if nargin == 1
         b = b{1};
     else
-        b = py.tuple(b{:});
+        b = py.tuple(b);
     end
 end
 
