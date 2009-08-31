@@ -199,7 +199,30 @@ static PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
   }
 #undef DECODE
 }
-    
+
+static PyObject* PyTuple_Single(const PyObject* pyobj) {
+  PyObject* tuple = PyTuple_New(1);
+  Py_INCREF(pyobj);
+  PyTuple_SetItem(tuple,0,(PyObject*) pyobj);
+  return tuple;
+}
+
+static mxArray* PyObject_to_mxDouble(const PyObject* pyobj) {
+  PyObject* pyfloat = PyNumber_Float((PyObject*) pyobj);
+  double scalar = PyFloat_AS_DOUBLE(pyfloat);
+  Py_DECREF(pyfloat);
+  return mxCreateDoubleScalar(scalar);
+}
+
+static mxArray* PyObject_to_mxLong(const PyObject* pyobj) {
+  PyObject* pylong = PyNumber_Long((PyObject*) pyobj);
+  long long scalar = PyLong_AsLongLong(pylong);
+  Py_DECREF(pylong);
+  mxArray* array = mxCreateNumericMatrix(1,1,mxINT64_CLASS, mxREAL);
+  long long *data = mxGetData(array);
+  *data = scalar;
+  return array;
+}
 
 static PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   if (mxIsPyObject(mxobj)) {

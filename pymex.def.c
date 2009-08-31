@@ -65,9 +65,39 @@ PYMEX_BIN_OP(MOD, PyNumber_Divmod)
 PYMEX_BIN_OP(BITAND, PyNumber_And)
 PYMEX_BIN_OP(BITOR, PyNumber_Or)
 PYMEX_BIN_OP(BITXOR, PyNumber_Xor)
+PYMEX_BIN_OP(LSHIFT, PyNumber_Lshift)
+PYMEX_BIN_OP(RSHIFT, PyNumber_Rshift)
 #undef PYMEX_BIN_OP
 
+#define PYMEX_UNARY_OP(name, pyfun)		\
+  PYMEX(name, 1,1, {				\
+      PyObject* O = unboxn(prhs[0]);		\
+      plhs[0] = box(pyfun(O));			\
+      Py_XDECREF(O);				\
+    })
 
+PYMEX_UNARY_OP(NEGATE, PyNumber_Negative)
+PYMEX_UNARY_OP(POSIFY, PyNumber_Positive)
+PYMEX_UNARY_OP(ABS, PyNumber_Absolute)
+PYMEX_UNARY_OP(INVERT, PyNumber_Invert)
+#undef PYMEX_UNARY_OP
+
+PYMEX(POWER, 2,3, {
+    PyObject* x = unboxn(prhs[0]);
+    PyObject* y = unboxn(prhs[1]);
+    PyObject* z;
+    if (nrhs != 3) {
+      z = Py_None;
+      Py_INCREF(z);
+    }
+    else {
+      z = unboxn(prhs[2]);
+    }
+    plhs[0] = box(PyNumber_Power(x, y, z));
+    Py_XDECREF(x);
+    Py_XDECREF(y);
+    Py_XDECREF(z);
+  })
 
 PYMEX(TO_STR, 1,1, {
     if (!mxIsPyObject(prhs[0]))
@@ -97,6 +127,14 @@ PYMEX(TO_LIST, 1,1, {
 
 PYMEX(TO_TUPLE, 1,1, {
     plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
+  })
+
+PYMEX(AS_DOUBLE,1,1, {
+    plhs[0] = PyObject_to_mxDouble(unbox(prhs[0]));
+  })
+
+PYMEX(AS_LONG,1,1, {
+    plhs[0] = PyObject_to_mxLong(unbox(prhs[0]));
   })
 
 PYMEX(CALL, 2,3, {

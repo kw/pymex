@@ -23,6 +23,18 @@ classdef object < handle
           tf = pymex('IS', obj1, obj2);
       end
       
+      function c = uminus(a)
+          c = pymex('NEGATE',a);
+      end
+      
+      function c = uplus(a)
+          c = pymex('POSIFY',a);
+      end      
+      
+      function c = invert(a)
+          c = pymex('INVERT',a);
+      end
+      
       function c = plus(a, b)
           c = pymex('ADD', a, b);
       end
@@ -37,6 +49,25 @@ classdef object < handle
       
       function c = mrdivide(a, b)
           c = pymex('DIVIDE', a, b);
+      end
+      
+      function c = pow(a,b,c)
+          if nargin < 3
+              c = [];
+          end
+          c = pymex('POWER',a,b,c);
+      end
+      
+      function c = mpower(a, b)
+          c = pymex('POWER',a,b);
+      end
+      
+      function c = lshift(a, b)
+          c = pymex('LSHIFT',a,b);
+      end
+      
+      function c = rshift(a, b)
+          c = pymex('RSHIFT',a,b);
       end
       
       function c = rem(a, b)
@@ -61,6 +92,10 @@ classdef object < handle
       
       function tf = logical(obj)
           tf = pymex('TO_BOOL', obj);
+      end
+      
+      function tf = not(obj)
+          tf = ~logical(obj);
       end
       
       function attr = getattr(obj, attrname)
@@ -123,10 +158,6 @@ classdef object < handle
           r = subsref(obj, substruct('.', '__hex__', '()', {}));
       end
       
-      function r = invert(obj)
-          r = subsref(obj, substruct('.', '__invert__', '()', {}));
-      end
-      
       function r = oct(obj)
           r = subsref(obj, substruct('.', '__oct__', '()', {}));
       end
@@ -141,6 +172,46 @@ classdef object < handle
       
       function r = name(obj)
           r = subsref(obj, substruct('.', '__name__'));
+      end
+      
+      function n = double(obj)
+          n = pymex('AS_DOUBLE',obj);
+      end
+      
+      function n = single(obj)
+          n = single(double(obj));
+      end
+      
+      function n = int64(obj)
+          n = pymex('AS_LONG',obj);
+      end
+      
+      function n = uint64(obj)
+          n = uint64(int64(obj));
+      end
+      
+      function n = int32(obj)
+          n = int32(int64(obj));
+      end
+      
+      function n = uint32(obj)
+          n = uint32(int64(obj));
+      end
+      
+      function n = int16(obj)
+          n = int16(int64(obj));
+      end
+      
+      function n = uint16(obj)
+          n = uint16(int64(obj));
+      end
+      
+      function n = int8(obj)
+          n = int8(int64(obj));
+      end
+      
+      function n = uint8(obj)
+          n = uint8(int64(obj));
       end
       
       function disp(obj)
