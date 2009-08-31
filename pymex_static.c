@@ -98,7 +98,7 @@ static bool mxIsPyObject(const mxArray* mxobj) {
   args[0] = (mxArray*) mxobj;
   args[1] = mxCreateString("py.types.object");
   mexCallMATLAB(1,&boolobj,2,args,"isa");
-  mxFree(args[1]);
+  mxDestroyArray(args[1]);
   return mxIsLogicalScalarTrue(boolobj);
 }
 
