@@ -1,20 +1,5 @@
-classdef object < handle    
-  properties (Hidden)
-      pointer
-  end
-  properties (Access = private, Transient)
-      pytype
-  end
-  
+classdef object < py.types.BasePyObject
   methods
-      function obj = object(inobj)
-          obj.pointer = uint64(0);
-      end
-      
-      function delete(obj)
-          pymex('DELETE_OBJ', obj);
-      end
-      
       function objdir = dir(obj)
           objdir = pymex('DIR', obj);
       end
@@ -110,22 +95,22 @@ classdef object < handle
           pymex('SET_ATTR', obj, attrname, val);
       end
       
+      function tf = hasattr(obj, attrname)
+          tf = pymex('HAS_ATTR', obj, attrname);
+      end
+      
       function setitem(obj, key, val)
           pymex('SET_ITEM', obj, key, val);
       end
       
       function c = char(obj)
-          if obj.pointer == uint64(0)
-              c = '<null pointer>';
-          else
-              c = pymex('TO_STR', obj);
-          end
+          c = pymex('TO_STR', obj);
       end
       
       function t = type(obj)
           if isempty(obj.pytype)              
               if obj.pointer == uint64(0)
-                  t = py.types.object();
+                  t = py.types.null();
               else
                   t = pymex('GET_TYPE', obj);
               end
@@ -142,36 +127,49 @@ classdef object < handle
           r = pymex('CALL', obj, args, kwargs);
       end
       
+      function r = methodcall(obj, method, varargin)
+          r = subsref(obj, substruct('.', method, '()', varargin));
+      end
+      
       function r = abs(obj)
-          r = subsref(obj, substruct('.', '__abs__', '()', {}));
+          r = methodcall(obj, '__abs__');          
       end
       
       function r = doc(obj)
-          r = subsref(obj, substruct('.', '__doc__'));
+          r = getattr(obj, '__doc__');
       end
       
       function r = hash(obj)
-          r = subsref(obj, substruct('.', '__hash__', '()', {}));
+          r = methodcall(obj, '__hash__');
       end
       
       function r = hex(obj)
-          r = subsref(obj, substruct('.', '__hex__', '()', {}));
+          r = methodcall(obj, '__hex__');         
       end
       
       function r = oct(obj)
-          r = subsref(obj, substruct('.', '__oct__', '()', {}));
+          r = methodcall(obj, '__oct__');          
       end
       
       function r = str(obj)
-          r = subsref(obj, substruct('.', '__str__', '()', {}));
+          r = methodcall(obj, '__str__');
+      end
+      
+      function r = repr(obj)
+          r = methodcall(obj, '__repr__');
       end
       
       function r = len(obj)
-          r = subsref(obj, substruct('.', '__len__', '()', {}));
+          r = methodcall(obj, '__len__');
       end
       
       function r = name(obj)
-          r = subsref(obj, substruct('.', '__name__'));
+          r = getattr(obj, '__name__');          
+      end
+      
+      function r = iter(obj)
+          iter = py.builtins('iter');
+          r = call(iter, obj);
       end
       
       function n = double(obj)
@@ -233,8 +231,16 @@ classdef object < handle
               
       end
       
-      function n = numel(obj, varargin)
+      function n = numel(obj, varargin) %#ok<MANU>
           n = 1;
+      end
+      
+      function s = size(obj, varargin)
+          if hasattr(obj,'__len__')
+              s = [1 double(len(obj))];
+          else
+              s = [1 1];
+          end
       end
       
       function tf = iscallable(obj)
@@ -319,10 +325,42 @@ classdef object < handle
       
       function n = colon(a, b, c)
           if nargin == 2
-              n = py.slice(a, b, []);
+              n = py.range(a, b);
           else
-              n = py.slice(a, c, b);
+              n = py.range(a, c, b);
           end
+          if isinstance(n{0}, py.builtins('int','long'))
+              n = int64(n);
+          else
+              n = double(n);
+          end
+      end
+      
+      function c = horzcat(varargin)
+          c = py.list({});
+          for i = 1:numel(varargin)
+              if ~isa(varargin{i}, 'py.types.BasePyObject')
+                  if isnumeric(varargin{i})
+                      varargin{i} = py.tuple(num2cell(varargin{i}));
+                  else
+                      varargin{i} = py.tuple(varargin(i));
+                  end
+              end
+              if hasattr(varargin{i}, '__iter__')
+                  methodcall(c, 'extend', varargin{i});
+              else
+                  methodcall(c, 'append', varargin{i});
+              end
+          end          
+      end
+      
+      function c = vertcat(varargin)
+          c = horzcat(varargin{:});
+      end
+      
+      function c = cat(dim, varargin) %#ok<MANU>
+          % ignore dim for general object
+          c = horzcat(varargin{:});
       end
       
       function n = end(obj, k, n) %#ok<INUSD>

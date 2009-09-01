@@ -2,12 +2,18 @@ function make(varargin)
 try
     locked = pymex('MEXISLOCKED');
     if locked
-        fprintf(2,'pymex is locked. Clear all py.Objects to unlock.\n');
+        fprintf(2,'pymex is locked. Clear all PyObjects to unlock.\n');
         return
     end
 catch %#ok<CTCH>
 end
 clear pymex;
+
+dir = fileparts(which('make'));
+if ~isequal(pwd, dir)
+    fprintf('cd %s\n', dir);
+    cd(dir);
+end
 
 if ~iscellstr(varargin)
     error('make takes string arguments only');

@@ -126,24 +126,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (err) {
     PyObject *err_type, *err_value, *err_traceback;
     PyErr_Fetch(&err_type, &err_value, &err_traceback);
-    mexPutVariable("global", "PYMEX_ERR_TYPE", box(err_type));
+    /*mexPutVariable("global", "PYMEX_ERR_TYPE", box(err_type));
     mexPutVariable("global", "PYMEX_ERR_VALUE", box(err_value));
-    mexPutVariable("global", "PYMEX_ERR_TRACE", box(err_traceback));
-    if (err_value) {
-      PyObject* pyid = PyString_FromString("Python:"); 
-      PyString_ConcatAndDel(&pyid, PyObject_GetAttrString(err_type, "__name__"));
-      PyObject* tuple = Py_BuildValue("ON", pyid, PyObject_Str(err_value));
-      PyObject* format = PyString_FromString("%s -> %s\n");
-      PyObject* pymsg = PyString_Format(format, tuple);
-      char* id = PyString_AsString(pyid);
-      char* msg = PyString_AsString(pymsg);
-      Py_DECREF(pyid);
-      Py_DECREF(tuple);
-      Py_DECREF(format);
-      Py_DECREF(pymsg);
-      mexErrMsgIdAndTxt(id, msg, msg);
-    }
+    mexPutVariable("global", "PYMEX_ERR_TRACE", box(err_traceback));*/
+    if (!err_value)
+      err_value = PyString_FromString("<no value>");
+    PyObject* pyid = PyString_FromString("Python:"); 
+    PyString_ConcatAndDel(&pyid, PyObject_GetAttrString(err_type, "__name__"));
+    PyObject* tuple = Py_BuildValue("ON", pyid, PyObject_Str(err_value));
+    PyObject* format = PyString_FromString("%s -> %s\n");
+    PyObject* pymsg = PyString_Format(format, tuple);
+    char* id = PyString_AsString(pyid);
+    char* msg = PyString_AsString(pymsg);
+    Py_DECREF(pyid);
+    Py_DECREF(tuple);
+    Py_DECREF(format);
+    Py_DECREF(pymsg);
     PyErr_Clear();
+    mexErrMsgIdAndTxt(id, msg);
   }
 }
 

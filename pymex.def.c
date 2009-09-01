@@ -160,21 +160,25 @@ PYMEX(IS_CALLABLE, 1,1, {
 
 PYMEX(GET_ATTR, 2,2, {
     PyObject* pyobj = unbox(prhs[0]);
-    PyObject* name;
-    if (!mxIsPyObject(prhs[1]))
-      name = mxChar_to_PyString(prhs[1]);
-    else
-      name = unbox(prhs[1]);
+    PyObject* name = unboxn(prhs[1]);
     plhs[0] = box(PyObject_GetAttr(pyobj, name));
-    if (!mxIsPyObject(prhs[1]))
-      Py_DECREF(name);
+    Py_XDECREF(name);
   })
 
 PYMEX(SET_ATTR, 3,3, {
     PyObject* pyobj = unbox(prhs[0]);
-    PyObject* key = Any_mxArray_to_PyObject(prhs[1]);
-    PyObject* val = Any_mxArray_to_PyObject(prhs[2]);
+    PyObject* key = unboxn(prhs[1]);
+    PyObject* val = unboxn(prhs[2]);
     PyObject_SetAttr(pyobj, key, val);
+    Py_XDECREF(key);
+    Py_XDECREF(val);
+  })
+
+PYMEX(HAS_ATTR, 2, 2, {
+    PyObject* pyobj = unbox(prhs[0]);
+    PyObject* name = unboxn(prhs[1]);
+    plhs[0] = mxCreateLogicalScalar(PyObject_HasAttr(pyobj, name));
+    Py_XDECREF(name);
   })
 
 PYMEX(GET_ITEM, 2,2, {

@@ -1,3 +1,7 @@
 function n = int(varargin)
 int = py.builtins('int');
-n = int(varargin{:});
+if nargin > 0
+    n = int(varargin{:});
+else
+    n = int;
+end
