@@ -1,26 +1,30 @@
-#define PRIVATE
+#define PRIVATE static
 
-PRIVATE mxArray* mro (const PyObject* pyobj);
-PRIVATE mxArray* box(const PyObject* pyobj);
-PRIVATE mxArray* boxb(const PyObject* pyobj);
+PRIVATE mxArray* mro (PyObject* pyobj);
+PRIVATE mxArray* box(PyObject* pyobj);
+PRIVATE mxArray* boxb(PyObject* pyobj);
 PRIVATE PyObject* unbox (const mxArray* mxobj);
 PRIVATE PyObject* unboxn (const mxArray* mxobj);
 PRIVATE bool mxIsPyNull (const mxArray* mxobj);
 PRIVATE bool mxIsPyObject(const mxArray* mxobj);
+PRIVATE mxArray* PyObject_to_mxLogical(PyObject* pyobj);
 PRIVATE PyObject* mxChar_to_PyString(const mxArray* mxchar);
-PRIVATE mxArray* PyString_to_mxChar(const PyObject* pystr);
-PRIVATE mxArray* PyObject_to_mxChar(const PyObject* pyobj);
-PRIVATE mxArray* PySequence_to_mxDouble(const PyObject* pyobj);
-PRIVATE mxArray* PySequence_to_mxLong(const PyObject* pyobj);
-PRIVATE mxArray* PyObject_to_mxDouble(const PyObject* pyobj);
-PRIVATE mxArray* PyObject_to_mxLong(const PyObject* pyobj);
+PRIVATE mxArray* PyString_to_mxChar(PyObject* pystr);
+PRIVATE mxArray* PyObject_to_mxChar(PyObject* pyobj);
+PRIVATE mxArray* PySequence_to_mxDouble(PyObject* pyobj);
+PRIVATE mxArray* PySequence_to_mxLong(PyObject* pyobj);
+PRIVATE mxArray* PySequence_to_mxCell(PyObject* pyobj);
+PRIVATE int PySequence_is_Numeric(PyObject* pyobj);
+PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj);
+PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj);
 PRIVATE PyObject* mxCell_to_PyObject(const mxArray* mxobj);
 PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex i);
 PRIVATE PyObject* mxNonScalar_to_PyList(const mxArray* mxobj);
 PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj);
+PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj);
 PRIVATE PyObject* PyDict_from_KW(const mxArray* kwargs);
 
-PRIVATE mxArray* mro (const PyObject* pyobj) {
+PRIVATE mxArray* mro (PyObject* pyobj) {
   mxArray* mrocell;
   if (!pyobj) {
     mrocell = mxCreateCellMatrix(1,1);
@@ -32,7 +36,7 @@ PRIVATE mxArray* mro (const PyObject* pyobj) {
     mxSetCell(mrocell, 0, mxCreateString("type"));
   }
   else {
-    PyObject* type = PyObject_Type((PyObject*) pyobj);
+    PyObject* type = PyObject_Type( pyobj);
     PyObject* mro = PyObject_CallMethod(type, "mro", "()");
     mwSize len = (mwSize) PySequence_Length(mro);
     mrocell = mxCreateCellMatrix(1,len);
@@ -48,7 +52,7 @@ PRIVATE mxArray* mro (const PyObject* pyobj) {
   return mrocell;
 }
 
-PRIVATE mxArray* box (const PyObject* pyobj) {
+PRIVATE mxArray* box (PyObject* pyobj) {
   mxArray* boxed = NULL;
   mxArray* args[1];
   if (!pyobj) {
@@ -66,7 +70,7 @@ PRIVATE mxArray* box (const PyObject* pyobj) {
   return boxed;
 }
 
-PRIVATE mxArray* boxb (const PyObject* pyobj) {
+PRIVATE mxArray* boxb (PyObject* pyobj) {
   Py_XINCREF(pyobj);
   return box(pyobj);
 }
@@ -122,18 +126,18 @@ PRIVATE PyObject* mxChar_to_PyString(const mxArray* mxchar) {
   return pystr;
 }
 
-PRIVATE mxArray* PyString_to_mxChar(const PyObject* pystr) {
+PRIVATE mxArray* PyString_to_mxChar(PyObject* pystr) {
   if (!pystr || !PyString_Check(pystr))
     mexErrMsgTxt("Input isn't a PyString");
-  char* tempstring = PyString_AsString((PyObject*) pystr);
+  char* tempstring = PyString_AsString( pystr);
   mxArray* mxchar = mxCreateString(tempstring);
   return mxchar;
 }
 
-PRIVATE mxArray* PyObject_to_mxChar(const PyObject* pyobj) {
+PRIVATE mxArray* PyObject_to_mxChar(PyObject* pyobj) {
   mxArray* mxchar;
   if (pyobj) {
-    PyObject* pystr = PyObject_Str((PyObject*) pyobj);
+    PyObject* pystr = PyObject_Str(pyobj);
     mxchar = PyString_to_mxChar(pystr);
     Py_DECREF(pystr);
   } 
@@ -141,6 +145,10 @@ PRIVATE mxArray* PyObject_to_mxChar(const PyObject* pyobj) {
     mxchar = mxCreateString("<NULL>");
   }
   return mxchar;
+}
+
+PRIVATE mxArray* PyObject_to_mxLogical(PyObject* pyobj) {
+  return mxCreateLogicalScalar(PyObject_IsTrue(pyobj));
 }
 
 PRIVATE PyObject* mxNonScalar_to_PyList(const mxArray* mxobj) {
@@ -207,31 +215,30 @@ PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
 #undef DECODE
 }
 
-PRIVATE PyObject* PyTuple_Single(const PyObject* pyobj) {
+PRIVATE PyObject* PyTuple_Single(PyObject* pyobj) {
   PyObject* tuple = PyTuple_New(1);
-  Py_INCREF(pyobj);
-  PyTuple_SetItem(tuple,0,(PyObject*) pyobj);
+  PyTuple_SetItem(tuple,0, pyobj);
   return tuple;
 }
 
-PRIVATE mxArray* PyObject_to_mxDouble(const PyObject* pyobj) {
-  if (PySequence_Check((PyObject*) pyobj)) {
+PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
+  if (PySequence_Check( pyobj)) {
     return PySequence_to_mxDouble(pyobj);
   }
   else {
-    PyObject* pyfloat = PyNumber_Float((PyObject*) pyobj);
+    PyObject* pyfloat = PyNumber_Float( pyobj);
     double scalar = PyFloat_AS_DOUBLE(pyfloat);
     Py_DECREF(pyfloat);
     return mxCreateDoubleScalar(scalar);
   }
 }
 
-PRIVATE mxArray* PyObject_to_mxLong(const PyObject* pyobj) {
-  if (PySequence_Check((PyObject*) pyobj)) {
+PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj) {
+  if (PySequence_Check( pyobj)) {
     return PySequence_to_mxLong(pyobj);
   }
   else {
-    PyObject* pylong = PyNumber_Long((PyObject*) pyobj);
+    PyObject* pylong = PyNumber_Long( pyobj);
     long long scalar = PyLong_AsLongLong(pylong);
     Py_DECREF(pylong);
     mxArray* array = mxCreateNumericMatrix(1,1,mxINT64_CLASS, mxREAL);
@@ -241,15 +248,15 @@ PRIVATE mxArray* PyObject_to_mxLong(const PyObject* pyobj) {
   }
 }
 
-PRIVATE mxArray* PySequence_to_mxDouble(const PyObject* pyobj) {
+PRIVATE mxArray* PySequence_to_mxDouble(PyObject* pyobj) {
   PyObject* item;
   PyObject* pyfloat;
-  Py_ssize_t len = PySequence_Length((PyObject*) pyobj);
+  Py_ssize_t len = PySequence_Length( pyobj);
   mxArray* rowvec = mxCreateDoubleMatrix(1,len, mxREAL);
   double* row = (double*) mxGetData(rowvec);
   mwIndex i;
   for (i=0; i<len; i++) {
-    item = PySequence_GetItem((PyObject*) pyobj, i);
+    item = PySequence_GetItem( pyobj, i);
     pyfloat = PyNumber_Float(item);
     row[i] = PyFloat_AS_DOUBLE(pyfloat);
     Py_DECREF(pyfloat);
@@ -258,15 +265,15 @@ PRIVATE mxArray* PySequence_to_mxDouble(const PyObject* pyobj) {
   return rowvec;
 }
 
-PRIVATE mxArray* PySequence_to_mxLong(const PyObject* pyobj) {
+PRIVATE mxArray* PySequence_to_mxLong(PyObject* pyobj) {
   PyObject* item;
   PyObject* pylong;
-  Py_ssize_t len = PySequence_Length((PyObject*)pyobj);
+  Py_ssize_t len = PySequence_Length(pyobj);
   mxArray* rowvec = mxCreateNumericMatrix(1,len,mxINT64_CLASS, mxREAL);
   long long* row = (long long*) mxGetData(rowvec);
   mwIndex i;
   for (i=0; i<len; i++) {
-    item = PySequence_GetItem((PyObject*) pyobj, i);
+    item = PySequence_GetItem(pyobj, i);
     pylong = PyNumber_Long(item);
     row[i] = PyLong_AsLongLong(pylong);
     Py_DECREF(pylong);
@@ -275,6 +282,49 @@ PRIVATE mxArray* PySequence_to_mxLong(const PyObject* pyobj) {
   return rowvec;
 }
 
+PRIVATE mxArray* PySequence_to_mxCell(PyObject* pyobj) {
+  PyObject* item;
+  Py_ssize_t len = PySequence_Length(pyobj);
+  mxArray* mxcell = mxCreateCellMatrix(1,len);
+  mwIndex i;
+  for (i=0; i<len; i++) {
+    item = PySequence_GetItem(pyobj, i);
+    mxSetCell(mxcell, i, Any_PyObject_to_mxArray(item));
+    Py_DECREF(item);
+  }
+  return mxcell;
+}
+
+PRIVATE int PySequence_is_Numeric(PyObject* pyobj) {
+  PyObject* item;
+  Py_ssize_t len = PySequence_Length(pyobj);
+  bool hasfloat = 0;
+  bool hasint = 0;
+  bool hasother = 0;
+  Py_ssize_t i;
+  for (i=0; i<len; i++) {
+    item = PySequence_GetItem(pyobj, i);
+    if (!PyNumber_Check(item)) {
+      Py_DECREF(item);
+      return 0;
+    }
+    if (PyInt_Check(item) || PyLong_Check(item))
+      hasint = 1;
+    else if (PyFloat_Check(item))
+      hasfloat = 1;
+    else
+      hasother = 1;
+  }
+  if (hasother)
+    mexWarnMsgTxt("Sequence has numeric items that don't check as ints, "
+		  "longs, or floats, and might not handle right.");
+  if (hasfloat)
+    return 2;
+  else if (hasint)
+    return 1;
+  else 
+    return -1;
+}
 
 PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   if (mxIsPyObject(mxobj)) {
@@ -303,6 +353,32 @@ PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   }
 }
 
+PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
+  if (!pyobj)
+    return box(pyobj); /* Null pointer */
+  else if (PyString_Check(pyobj))
+    return PyString_to_mxChar(pyobj);
+  else if (pyobj == Py_None)
+    return mxCreateDoubleMatrix(0,0,mxREAL);
+  else if (PySequence_Check(pyobj)) {
+    int type = PySequence_is_Numeric(pyobj);
+    if (type == 2)
+      return PySequence_to_mxDouble(pyobj);
+    else if (type == 1)
+      return PySequence_to_mxLong(pyobj);
+    else
+      return PySequence_to_mxCell(pyobj);
+  }
+  else if (PyBool_Check(pyobj))
+    return PyObject_to_mxLogical(pyobj);
+  else if (PyInt_Check(pyobj) || PyLong_Check(pyobj))
+    return PyObject_to_mxLong(pyobj);
+  else if (PyFloat_Check(pyobj))
+    return PyObject_to_mxDouble(pyobj);
+  else
+    return boxb(pyobj);
+}
+
 PRIVATE PyObject* PyDict_from_KW(const mxArray* kwargs) {
   PyObject* dict = PyDict_New();
   mwSize numkeys = mxGetNumberOfElements(kwargs);
@@ -314,3 +390,5 @@ PRIVATE PyObject* PyDict_from_KW(const mxArray* kwargs) {
   }
   return dict;
 }
+
+#undef PRIVATE

@@ -12,6 +12,9 @@ classdef kw
                 kwargs(arg).keyword = varargin{i};
                 kwargs(arg).value = varargin{i+1};
             end
+            if arg==0
+                kwargs(1) = [];
+            end
         end
         
         function d = dict(kwargs)

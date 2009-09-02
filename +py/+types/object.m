@@ -121,7 +121,7 @@ classdef object < py.types.BasePyObject
       end      
       
       function r = call(obj, varargin)
-          iskw = cellfun(@(o) isa(o, 'py.kw'), varargin);
+          iskw = cellfun(@(o) isa(o, 'kw'), varargin);
           kwargs = [varargin{iskw}];
           args = varargin(~iskw);
           r = pymex('CALL', obj, args, kwargs);

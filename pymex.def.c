@@ -43,9 +43,8 @@ PYMEX(IS, 2,2, {
   })
 
 PYMEX(TO_BOOL, 1,1, {
-    plhs[0] = mxCreateLogicalScalar(PyObject_IsTrue(unbox(prhs[0])));
+    plhs[0] = PyObject_to_mxLogical(unbox(prhs[0]));
   })
-
 
 #define PYMEX_BIN_OP(name, pyfun)			\
   PYMEX(name, 2,2, {					\
@@ -202,4 +201,11 @@ PYMEX(IS_INSTANCE, 2,2, {
     plhs[0] = 
       mxCreateLogicalScalar(PyObject_IsInstance(unbox(prhs[0]),
 						Any_mxArray_to_PyObject(prhs[1])));
+  })
+
+PYMEX(TO_MXARRAY, 1,1, {
+    if (!mxIsPyObject(prhs[0]))
+      plhs[0] = (mxArray*) prhs[0];
+    else
+      plhs[0] = Any_PyObject_to_mxArray(unbox(prhs[0]));
   })
