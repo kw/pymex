@@ -1,5 +1,6 @@
 #define PRIVATE static
 
+PRIVATE char* PyMX_Marker = "PyMXObject";
 PRIVATE mxArray* mro (PyObject* pyobj);
 PRIVATE mxArray* box(PyObject* pyobj);
 PRIVATE mxArray* boxb(PyObject* pyobj);
@@ -23,6 +24,9 @@ PRIVATE PyObject* mxNonScalar_to_PyList(const mxArray* mxobj);
 PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj);
 PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj);
 PRIVATE PyObject* PyDict_from_KW(const mxArray* kwargs);
+PRIVATE bool PyMXObj_Check(PyObject* pyobj);
+PRIVATE PyObject* PyCObject_from_mxArray(const mxArray* mxobj);
+
 
 PRIVATE mxArray* mro (PyObject* pyobj) {
   mxArray* mrocell;
@@ -348,8 +352,7 @@ PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   else if (mxIsNumeric(mxobj) || mxIsLogical(mxobj))
     return mxNonScalar_to_PyList(mxobj); 
   else {
-    mexErrMsgIdAndTxt("pymex:convertMXtoPY", "Don't know how to convert %s",
-		      mxGetClassName(mxobj));
+    return PyCObject_from_mxArray(mxobj);
   }
 }
 
@@ -375,6 +378,8 @@ PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return PyObject_to_mxLong(pyobj);
   else if (PyFloat_Check(pyobj))
     return PyObject_to_mxDouble(pyobj);
+  else if (PyMXObj_Check(pyobj))
+    return (mxArray*) PyCObject_AsVoidPtr(pyobj);
   else
     return boxb(pyobj);
 }
@@ -390,5 +395,56 @@ PRIVATE PyObject* PyDict_from_KW(const mxArray* kwargs) {
   }
   return dict;
 }
+
+PRIVATE bool PyMXObj_Check(PyObject* pyobj) {
+  return PyCObject_Check(pyobj) && (PyCObject_GetDesc(pyobj) == (void*) PyMX_Marker);
+}
+
+PRIVATE void PyMXDestructor(void* mxobj, void* desc) {
+  mxDestroyArray((mxArray*) mxobj);
+}
+
+PRIVATE PyObject* PyCObject_from_mxArray(const mxArray* mxobj) {
+  mxArray* copy = mxDuplicateArray(mxobj);
+  mexMakeArrayPersistent(copy);
+  return PyCObject_FromVoidPtrAndDesc((void*) copy, (void*) PyMX_Marker, PyMXDestructor);
+}
+
+PRIVATE int mxClassID_to_PyArrayType(mxClassID mxclass) {
+  switch (mxclass) {
+  case mxLOGICAL_CLASS: return NPY_BOOL;
+  case mxCHAR_CLASS: return NPY_STRING;
+  case mxINT8_CLASS: return NPY_INT8;
+  case mxUINT8_CLASS: return NPY_UINT8;
+  case mxINT16_CLASS: return NPY_INT16;
+  case mxUINT16_CLASS: return NPY_UINT16;
+  case mxINT32_CLASS: return NPY_INT32;
+  case mxUINT32_CLASS: return NPY_UINT32;
+  case mxINT64_CLASS: return NPY_INT64:
+  case mxUINT64_CLASS: return NPY_UINT64;
+  case mxSINGLE_CLASS: return NPY_FLOAT32;
+  case mxDOUBLE_CLASS: return NPY_FLOAT64;
+  default: return NPY_OBJECT;
+  }
+}
+
+PRIVATE mxClassID PyArrayType_to_mxClassID(int pytype) {
+  switch (pytype) {
+  case NPY_BOOL: return mxLOGICAL_CLASS;
+  case NPY_STRING: return mxCHAR_CLASS;
+  case NPY_INT8: return mxINT8_CLASS;
+  case NPY_UINT8: return mxUINT8_CLASS;
+  case NPY_INT16: return mxINT16_CLASS;
+  case NPY_UINT16: return mxUINT16_CLASS;
+  case NPY_INT32: return mxINT32_CLASS;
+  case NPY_UINT32: return mxUINT32_CLASS;
+  case NPY_INT64: return mxINT64_CLASS;
+  case NPY_UINT64: return mxUINT64_CLASS;
+  case NPY_FLOAT32: return mxSINGLE_CLASS;
+  case NPY_FLOAT64: return mxDOUBLE_CLASS;
+  default: return mxUNKNOWN_CLASS;
+  }
+}
+
 
 #undef PRIVATE

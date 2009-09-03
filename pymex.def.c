@@ -209,3 +209,15 @@ PYMEX(TO_MXARRAY, 1,1, {
     else
       plhs[0] = Any_PyObject_to_mxArray(unbox(prhs[0]));
   })
+
+PYMEX(RUN_SIMPLE_STRING, 1, 1, {
+    char* cmd = mxArrayToString(prhs[0]);
+    int ret = PyRun_SimpleString(cmd);
+    mxFree(cmd);
+    plhs[0] = mxCreateDoubleScalar((double) ret);
+  })
+
+PYMEX(AS_PYCOBJECT, 1, 1, {
+    plhs[0] = box(PyCObject_from_mxArray(prhs[0]));
+  })
+		  
