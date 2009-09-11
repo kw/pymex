@@ -27,7 +27,7 @@ void name##_pymexfun(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			"Bad number of args: %d <= %d <= %d",		\
 			min, nrhs, max); }				\
     do body while (0);							\
-    PYMEX_DEBUG("<end " #name "\n");					\
+    PYMEX_DEBUG("<end " #name ">\n");					\
   }
 
 #define PYMEX_MAKECELL(name, min, max, body)	\

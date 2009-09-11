@@ -217,18 +217,16 @@ classdef object < py.types.BasePyObject
           toolong = 80*24;
           toomany = 40;
           newlines = strfind(str, char(10));
-          typename = ['pymex ' char(name(type(obj)))];
           
           if numel(newlines) > toomany
-              fprintf('%s:\n%s\n...<truncated: too many lines>...\n', typename, str(1:newlines(toomany)-1));
+              fprintf('%s\n...<truncated: too many lines>...\n', str(1:newlines(toomany)-1));
           elseif numel(str) > toolong
-              fprintf('%s:\n%s\n...<truncated: too long>...\n', typename, str(1:toolong));
-          elseif numel(newlines) == 0 && numel(str) < 80
-              fprintf('%s: %s\n', typename, str);
+              fprintf('%s\n...<truncated: too long>...\n', str(1:toolong));
+          %elseif numel(newlines) == 0 && numel(str) < 80
+          %    fprintf('%s\n', typename, str);
           else
-              fprintf('%s:\n%s\n', typename, str);             
-          end
-              
+              fprintf('%s\n', str);             
+          end              
       end
       
       function n = numel(obj, varargin) %#ok<MANU>
@@ -329,11 +327,7 @@ classdef object < py.types.BasePyObject
           else
               n = py.range(a, c, b);
           end
-          if isinstance(n{0}, py.builtins('int','long'))
-              n = int64(n);
-          else
-              n = double(n);
-          end
+          n = double(n);          
       end
       
       function c = horzcat(varargin)

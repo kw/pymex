@@ -27,43 +27,77 @@ PRIVATE PyObject* PyDict_from_KW(const mxArray* kwargs);
 PRIVATE bool PyMXObj_Check(PyObject* pyobj);
 PRIVATE PyObject* PyCObject_from_mxArray(const mxArray* mxobj);
 
-
-PRIVATE mxArray* mro (PyObject* pyobj) {
-  mxArray* mrocell;
+PRIVATE mxArray* box_by_type(PyObject* pyobj) {
+  PYMEX_DEBUG("Trying to box %p\n", pyobj);
+  char* package = "py.types.%s";
+  char mlname[128] = {0};
+  mxArray* box = NULL;
+  mxArray* mxname;
+  mxArray* which;
+  int ret = -1;
   if (!pyobj) {
-    mrocell = mxCreateCellMatrix(1,1);
-    mxSetCell(mrocell, 0, mxCreateString("null"));
-  }
-  else if (PyType_Check(pyobj)) {
-    /* Lump all types together */
-    mrocell = mxCreateCellMatrix(1,1);
-    mxSetCell(mrocell, 0, mxCreateString("type"));
+    ret = mexCallMATLAB(1,&box,0,NULL,"py.types.null");
   }
   else {
-    PyObject* type = PyObject_Type( pyobj);
-    PyObject* mro = PyObject_CallMethod(type, "mro", "()");
-    mwSize len = (mwSize) PySequence_Length(mro);
-    mrocell = mxCreateCellMatrix(1,len);
-    mwIndex i;
-    for (i=0; i<len; i++) {
+    PyObject* type = (PyObject*) pyobj->ob_type;
+    PyObject* mro;
+    if (PyType_Check(pyobj)) {
+      PYMEX_DEBUG("Object is a type...\n");
+      mro = Py_BuildValue("(O)", &PyType_Type);
+    }
+    else {
+      PYMEX_DEBUG("Object is not a type...\n");
+      mro = PyObject_CallMethod(type, "mro", "()");
+    }
+    Py_ssize_t len = PySequence_Length(mro);
+    Py_ssize_t i;
+    for (i=0; i<len && ret; i++) {
       PyObject* item = PySequence_GetItem(mro, i);
+      if (item == pyobj) {
+	PYMEX_DEBUG("Pointers match!?\n"); 
+      }
+      else if (!item) {
+	PYMEX_DEBUG("Item is null!?\n");
+      }
+      else {
+	PYMEX_DEBUG("Ok, getting name...\n");
+      }
       PyObject* name = PyObject_GetAttrString(item, "__name__");
-      mxSetCell(mrocell, i, mxCreateString(PyString_AsString(name)));
+      snprintf(mlname, 128, package, PyString_AsString(name));
+      PYMEX_DEBUG("Checking for %s...\n", mlname);
       Py_DECREF(name);
       Py_DECREF(item);
+      mxname = mxCreateString(mlname);
+      mexCallMATLAB(1,&which,1,&mxname,"which");
+      mxDestroyArray(mxname);
+      if (mxGetNumberOfElements(which) > 0) {
+	PYMEX_DEBUG("%s looks good, trying it...\n", mlname);
+	ret = mexCallMATLAB(1,&box,0,NULL,mlname);
+      }
+      mxDestroyArray(which);
+    }
+    Py_DECREF(mro);
+    if (ret) { /* none found, use sane default */
+      PYMEX_DEBUG("No reasonable box found.\n");
+      ret = mexCallMATLAB(1,&box,0,NULL,"py.types.object");
     }
   }
-  return mrocell;
+  if (ret || !box)
+    mexErrMsgIdAndTxt("pymex:NoBoxes","Unable to find py.types.object");
+  PYMEX_DEBUG("Returning box\n");
+  return box;
 }
 
+               
 PRIVATE mxArray* box (PyObject* pyobj) {
   mxArray* boxed = NULL;
   mxArray* args[1];
   if (!pyobj) {
     PYMEX_DEBUG("Attempted to box null object.");
   }
-  args[0] = mro(pyobj);
-  mexCallMATLAB(1,&boxed,1,args,"py.pointer_by_mro");
+  /*args[0] = mro(pyobj);
+    mexCallMATLAB(1,&boxed,1,args,"py.pointer_by_mro");*/
+  boxed = box_by_type(pyobj);
   if (pyobj) {
     mexLock();
     mxArray* ptr_field = mxGetProperty(boxed, 0, "pointer");
