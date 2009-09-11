@@ -420,7 +420,7 @@ PRIVATE int mxClassID_to_PyArrayType(mxClassID mxclass) {
   case mxUINT16_CLASS: return NPY_UINT16;
   case mxINT32_CLASS: return NPY_INT32;
   case mxUINT32_CLASS: return NPY_UINT32;
-  case mxINT64_CLASS: return NPY_INT64:
+  case mxINT64_CLASS: return NPY_INT64;
   case mxUINT64_CLASS: return NPY_UINT64;
   case mxSINGLE_CLASS: return NPY_FLOAT32;
   case mxDOUBLE_CLASS: return NPY_FLOAT64;

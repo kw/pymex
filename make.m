@@ -25,8 +25,8 @@ if status ~= 0
 else
     try
         c = pymex;
-        fprintf('pymex built with %d system calls.\n', numel(c));
+        fprintf('pymex loaded, and knows %d tricks.\n', numel(c));
     catch %#ok<CTCH>
-        fprintf(2,'pymex build failed somehow\n');
+        fprintf('pymex could not load.\n');
     end
 end

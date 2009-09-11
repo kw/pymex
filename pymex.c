@@ -1,4 +1,5 @@
 #include <Python.h>
+#include <numpy/arrayobject.h>
 #include "mex.h"
 
 #ifndef PYMEX_DEBUG_FLAG
