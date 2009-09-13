@@ -1,4 +1,4 @@
-function varargout = builtins(varargin)
+function varargout = pybuiltins(varargin)
 b = pymex('GET_BUILTINS');
 if nargin > 0
     b = cellfun(@(name) getitem(b, name), varargin, 'uniformoutput', false);
@@ -7,7 +7,7 @@ if nargin > 0
     elseif nargin > 1 && nargout == 1
         varargout{1} = py.tuple(b);
     elseif nargin > 1 && nargout > 1
-        varargout{1:nargout} = b{1:nargout};
+        [varargout{1:nargout}] = b{1:nargout};
     elseif nargout == 0
         for i=1:numel(varargin)
             assignin('caller', varargin{i}, b{i});

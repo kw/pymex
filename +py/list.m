@@ -1,3 +1,3 @@
 function L = list(obj)
-list = py.builtins('list');
+list = pybuiltins('list');
 L = list(obj);

@@ -1,4 +1,4 @@
-function s = slice(varargin)
+function s = SI(varargin)
 slice = py.builtins('slice');
 for s=1:numel(varargin)
     if isfloat(varargin{s})

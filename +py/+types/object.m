@@ -168,7 +168,7 @@ classdef object < py.types.BasePyObject
       end
       
       function r = iter(obj)
-          iter = py.builtins('iter');
+          pybuiltins iter;
           r = call(iter, obj);
       end
       
