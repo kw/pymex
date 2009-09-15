@@ -480,5 +480,25 @@ PRIVATE mxClassID PyArrayType_to_mxClassID(int pytype) {
   }
 }
 
+PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj) {
+  PyObject* base = PyCObject_from_mxArray(mxobj);
+  mxArray* ptr = PyCObject_AsVoidPtr(base);
+  void* data = mxGetData(ptr);
+  int nd = (int) mxGetNumberOfDimensions(ptr);
+  const mwSize* mxdims = mxGetDimensions(ptr);
+  npy_intp dims[nd];
+  int i;
+  for (i=0; i<nd; i++) {
+    dims[i] = (int) mxdims[i];
+  }
+  int typenum = mxClassID_to_PyArrayType(mxGetClassID(ptr));
+  int itemsize = (int) mxGetElementSize(ptr);
+  int flags = NPY_F_CONTIGUOUS;
+  PyArrayObject* array = (PyArrayObject*)
+    PyArray_New(&PyArray_Type, nd, dims, typenum, NULL, data,
+		itemsize, flags, NULL);
+  array->base = base;
+  return (PyObject*) array;
+}
 
 #undef PRIVATE

@@ -1,4 +1,5 @@
 #include <Python.h>
+#define NPY_USE_PYMEM 1
 #include <numpy/arrayobject.h>
 #include "mex.h"
 
@@ -65,7 +66,10 @@ enum PYMEX_COMMAND {
 
 /* mex body and related functions */
 
+static PyObject* numpy = NULL;
+
 static void ExitFcn() {
+  Py_XDECREF(numpy);
   Py_Finalize();
   PYMEX_DEBUG("[python: finalized]\n");
 }
@@ -74,6 +78,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (!Py_IsInitialized()) {
     Py_Initialize();
     PYMEX_DEBUG("[python: initialized]\n");
+    PyObject* name = PyString_FromString("numpy");
+    numpy = PyImport_Import(name);    
+    Py_DECREF(name);
+    PYMEX_DEBUG("[numpy: module imported]\n");
+    import_array();
+    PYMEX_DEBUG("[numpy: API imported]\n");
     mexAtExit(ExitFcn);
   }   
 

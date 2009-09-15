@@ -221,3 +221,6 @@ PYMEX(AS_PYCOBJECT, 1, 1, {
     plhs[0] = box(PyCObject_from_mxArray(prhs[0]));
   })
 		  
+PYMEX(TO_NDARRAY, 1, 1, {
+    plhs[0] = box(mxArray_to_PyArray(prhs[0]));
+  })
