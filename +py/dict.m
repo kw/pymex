@@ -1,3 +1,3 @@
 function d = dict(obj)
-pybuiltins dict;
+dict = pybuiltins('dict');
 d = dict(obj);

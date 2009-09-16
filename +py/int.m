@@ -1,5 +1,5 @@
 function n = int(varargin)
-int = py.builtins('int');
+int = pybuiltins('int');
 if nargin > 0
     n = int(varargin{:});
 else

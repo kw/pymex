@@ -1,3 +1,3 @@
 function s = S(varargin)
-slice = py.builtins('slice');
+slice = pybuiltins('slice');
 s = slice(varargin{:});

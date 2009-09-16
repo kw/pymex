@@ -1,3 +1,3 @@
 function L = tuple(obj)
-tuple = py.builtins('tuple');
+tuple = pybuiltins('tuple');
 L = tuple(obj);
