@@ -7,6 +7,7 @@ PY_VER = $(shell ${PYTHON} -c 'import sys; print("%d.%d" % sys.version_info[0:2]
 
 PY_INCLUDE=${PYTHONHOME}/include/python${PY_VER}
 PY_LIB=${PYTHONHOME}/lib
+
 NUMPY_INCLUDE ?= $(shell ${PYTHON} -c 'import numpy; print(numpy.get_include());')
 PY_FLAGS=-I${PY_INCLUDE} -I${NUMPY_INCLUDE} -L${PY_LIB} -lpython${PY_VER}
 

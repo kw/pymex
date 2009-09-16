@@ -493,7 +493,7 @@ PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj) {
   }
   int typenum = mxClassID_to_PyArrayType(mxGetClassID(ptr));
   int itemsize = (int) mxGetElementSize(ptr);
-  int flags = NPY_F_CONTIGUOUS;
+  int flags = NPY_FARRAY;
   PyArrayObject* array = (PyArrayObject*)
     PyArray_New(&PyArray_Type, nd, dims, typenum, NULL, data,
 		itemsize, flags, NULL);
