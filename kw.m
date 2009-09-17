@@ -1,3 +1,13 @@
+% Class kw: Python Keywords
+% Python allows function calls to include keyword arguments as well as
+% positional arguments. In some cases arguments *must* be supplied as keywords.
+% MATLAB has no similar syntax, so some sort of marker is needed to indicate
+% keyword arguments to be provided to Python calls, like so:
+% x = pyfunc(a, kw('b', 'bee'), c, kw('d', 'dee', 'e', 'iii'))
+% The kw() constructor takes key/value pairs and produces an object array. 
+% When MATLAB tries to call a python function using the 'call' method (or the ()
+% syntax), any objects of type kw will be concatenated, converted to a python
+% dict, and passed in as the **kwargs parameter. 
 classdef kw
     properties
         keyword
@@ -18,10 +28,14 @@ classdef kw
         end
         
         function d = dict(kwargs)
-            d = pymex('DICT_FROM_KW', kwargs);
+            dict = pybuiltins('dict');
+            d = dict();
+            for i=1:numel(kwargs)
+                d{kwargs(i).keyword} = kwargs{i}.value;
+            end
         end
     end
     
     
 end
-                
+ 

@@ -1,4 +1,4 @@
-classdef object < py.types.BasePyObject
+classdef object < BasePyObject
   methods
       function objdir = dir(obj)
           objdir = pymex('DIR', obj);
@@ -110,7 +110,7 @@ classdef object < py.types.BasePyObject
       function t = type(obj)
           if isempty(obj.pytype)              
               if obj.pointer == uint64(0)
-                  t = py.types.null();
+                  t = pytypes.null();
               else
                   t = pymex('GET_TYPE', obj);
               end
@@ -269,10 +269,10 @@ classdef object < py.types.BasePyObject
               case '()'
                   out = call(out, subs{:});
               case '{}'
-                  slice = pybuiltins('slice');
+                  [slice None] = pybuiltins('slice', 'None');
                   for s = 1:numel(subs)
                       if isequal(subs{s}, ':')
-                          subs{s} = call(slice, [],[],[]);
+                          subs{s} = call(slice, None);
                       end
                   end                   
                   if numel(subs) > 1
@@ -307,9 +307,9 @@ classdef object < py.types.BasePyObject
                       setattr(obj, subs, val);
                   case '{}'
                       for s = 1:numel(subs)
-                          slice = pybuiltins('slice');
+                          [slice None] = pybuiltins('slice','None');
                           if isequal(subs{s}, ':')
-                              subs{s} = call(slice, [],[],[]);
+                              subs{s} = call(slice, None);
                           end
                       end
                       if numel(subs) > 1
@@ -336,7 +336,7 @@ classdef object < py.types.BasePyObject
       function c = horzcat(varargin)
           c = py.list({});
           for i = 1:numel(varargin)
-              if ~isa(varargin{i}, 'py.types.BasePyObject')
+              if ~isa(varargin{i}, 'BasePyObject')
                   if isnumeric(varargin{i})
                       varargin{i} = py.tuple(num2cell(varargin{i}));
                   else

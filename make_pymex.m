@@ -1,4 +1,4 @@
-function make(varargin)
+function make_pymex(varargin)
 try
     locked = pymex('MEXISLOCKED');
     if locked
@@ -9,7 +9,7 @@ catch %#ok<CTCH>
 end
 clear pymex;
 
-dir = fileparts(which('make'));
+dir = fileparts(which('make_pymex'));
 if ~isequal(pwd, dir)
     fprintf('cd %s\n', dir);
     cd(dir);

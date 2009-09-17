@@ -1,4 +1,4 @@
-classdef null < py.types.BasePyObject
+classdef null < BasePyObject
     methods
         function B = subsref(A, S)
             error('Can''t subsref null pointer');
@@ -9,7 +9,7 @@ classdef null < py.types.BasePyObject
         end
         
         function t = type(obj)
-            t = py.types.null;
+            t = pytypes.null;
         end
         
         function disp(obj)
