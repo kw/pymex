@@ -480,9 +480,13 @@ PRIVATE mxClassID PyArrayType_to_mxClassID(int pytype) {
   }
 }
 
-PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj) {
-  PyObject* base = PyCObject_from_mxArray(mxobj);
-  mxArray* ptr = PyCObject_AsVoidPtr(base);
+PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate) {
+  PyObject* base = NULL;
+  mxArray* ptr = (mxArray*) mxobj;
+  if (duplicate) {
+    base = PyCObject_from_mxArray(mxobj);
+    ptr = PyCObject_AsVoidPtr(base);
+  }
   void* data = mxGetData(ptr);
   int nd = (int) mxGetNumberOfDimensions(ptr);
   const mwSize* mxdims = mxGetDimensions(ptr);

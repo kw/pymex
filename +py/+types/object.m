@@ -252,7 +252,7 @@ classdef object < py.types.BasePyObject
       function pstruct = saveobj(obj)
           pstruct = struct('pickled',false,'string','');
           try
-              dumps = getattr(py.import('pickle'), 'dumps');
+              dumps = getattr(pyimport('pickle'), 'dumps');
               pstruct.string = char(call(dumps, obj));
               pstruct.pickled = true;
           catch %#ok<CTCH>
@@ -269,9 +269,10 @@ classdef object < py.types.BasePyObject
               case '()'
                   out = call(out, subs{:});
               case '{}'
+                  slice = pybuiltins('slice');
                   for s = 1:numel(subs)
                       if isequal(subs{s}, ':')
-                          subs{s} = py.slice([],[],[]);
+                          subs{s} = call(slice, [],[],[]);
                       end
                   end                   
                   if numel(subs) > 1
@@ -306,8 +307,9 @@ classdef object < py.types.BasePyObject
                       setattr(obj, subs, val);
                   case '{}'
                       for s = 1:numel(subs)
+                          slice = pybuiltins('slice');
                           if isequal(subs{s}, ':')
-                              subs{s} = py.slice([],[],[]);
+                              subs{s} = call(slice, [],[],[]);
                           end
                       end
                       if numel(subs) > 1
@@ -322,10 +324,11 @@ classdef object < py.types.BasePyObject
       end
       
       function n = colon(a, b, c)
+          range = pybuiltins('range');
           if nargin == 2
-              n = py.range(a, b);
+              n = call(range, a, b);              
           else
-              n = py.range(a, c, b);
+              n = call(range, a, c, b);
           end
           n = double(n);          
       end
@@ -371,7 +374,7 @@ classdef object < py.types.BasePyObject
               pyobj = py.None;
           else
               try
-                  loads = getattr(py.import('pickle'), 'loads');
+                  loads = getattr(pyimport('pickle'), 'loads');
                   pyobj = call(loads, pstruct.string);
               catch %#ok<CTCH>
                   pyobj = py.None;

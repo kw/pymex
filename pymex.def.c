@@ -222,5 +222,24 @@ PYMEX(AS_PYCOBJECT, 1, 1, {
   })
 		  
 PYMEX(TO_NDARRAY, 1, 1, {
-    plhs[0] = box(mxArray_to_PyArray(prhs[0]));
+    plhs[0] = box(mxArray_to_PyArray(prhs[0], true));
   })
+
+PYMEX(FROM_NDARRAY, 1, 1, {
+    PyObject* obj = unbox(prhs[0]);
+    mxClassID class = PyArrayType_to_mxClassID(PyArray_TYPE(obj));
+    int nd = PyArray_NDIM(obj);
+    npy_intp* ndims = PyArray_DIMS(obj);
+    mwSize mxdims[nd];
+    mwSize i;
+    for (i=0; i<nd; i++) {
+      mxdims[i] = (mwSize) ndims[i];
+    }
+    mxArray* result = mxCreateNumericArray(nd, mxdims, class, mxREAL);
+    PyObject* pyresult = mxArray_to_PyArray(result, false);
+    PyArray_CopyInto((PyArrayObject*) pyresult, (PyArrayObject*) obj);
+    Py_DECREF(pyresult);
+    plhs[0] = result;
+  })
+
+    

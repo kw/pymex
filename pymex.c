@@ -70,7 +70,9 @@ static PyObject* numpy = NULL;
 
 static void ExitFcn() {
   Py_XDECREF(numpy);
-  Py_Finalize();
+  /* numpy doesn't seem to like attempts to reinitialize it, so we'll avoid
+     this problem by never finalizing python. What could possibly go wrong? */
+  /*Py_Finalize();*/
   PYMEX_DEBUG("[python: finalized]\n");
 }
 
@@ -78,12 +80,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (!Py_IsInitialized()) {
     Py_Initialize();
     PYMEX_DEBUG("[python: initialized]\n");
+    import_array();
+    PYMEX_DEBUG("[numpy: API imported]\n");
     PyObject* name = PyString_FromString("numpy");
     numpy = PyImport_Import(name);    
     Py_DECREF(name);
     PYMEX_DEBUG("[numpy: module imported]\n");
-    import_array();
-    PYMEX_DEBUG("[numpy: API imported]\n");
     mexAtExit(ExitFcn);
   }   
 
