@@ -16,6 +16,7 @@ all: ${TARGET}
 
 ${TARGET}: pymex.c pymex_static.c pymex.def.c .debug_${DEBUG}
 	$(MEX) $(MEXFLAGS) \
+	-I${NUMPY_INCLUDE} \
 	-DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c
 
 .debug_0:

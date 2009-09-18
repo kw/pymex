@@ -253,7 +253,7 @@
             # CkeyLanguage: C
             # CkeyVersion:
             CC='gcc-4.0'
-            CFLAGS='-fno-common -no-cpp-precomp'
+            CFLAGS="$PY_CFLAGS -fno-common -no-cpp-precomp"
             CFLAGS="$CFLAGS  -fexceptions"
             CLIBS="$MLIBS"
             COPTIMFLAGS='-O3 -DNDEBUG'
@@ -283,7 +283,7 @@
 #
             LD="$CC"
             LDEXTENSION='.mexmaci'
-            LDFLAGS='-Wl,-flat_namespace -undefined suppress'
+            LDFLAGS="$PY_LDFLAGS -Wl,-flat_namespace -undefined suppress"
             LDFLAGS="$LDFLAGS -bundle -Wl,-exported_symbols_list,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
@@ -299,7 +299,7 @@
             # CkeyLanguage: C
             # CkeyVersion:
             CC='gcc-4.0'
-            CFLAGS='-fno-common -no-cpp-precomp -fexceptions -arch x86_64'
+            CFLAGS="$PY_CFLAGS -fno-common -no-cpp-precomp -fexceptions -arch x86_64"
             CLIBS="$MLIBS -lstdc++"
             COPTIMFLAGS='-O3 -DNDEBUG'
             CDEBUGFLAGS='-g'
@@ -327,7 +327,7 @@
 #
             LD="$CC"
             LDEXTENSION='.mexmaci64'
-            LDFLAGS='-Wl,-twolevel_namespace -undefined error -arch x86_64'
+            LDFLAGS="$PY_LDFLAGS -Wl,-twolevel_namespace -undefined error -arch x86_64"
             LDFLAGS="$LDFLAGS -bundle -Wl,-exported_symbols_list,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
