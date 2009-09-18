@@ -5,7 +5,7 @@ if nargin > 0
     if nargin == 1 && nargout == 1
         varargout{1} = b{1};
     elseif nargin > 1 && nargout == 1
-        varargout{1} = py.tuple(b);
+        varargout{1} = pymex('TO_TUPLE', b);
     elseif nargin > 1 && nargout > 1
         [varargout{1:nargout}] = b{1:nargout};
     elseif nargout == 0
@@ -16,7 +16,8 @@ if nargin > 0
 elseif nargout == 0
     keys = b.keys();
     values = b.values();
-    for i=0:(double(len(keys))-1)
+    inds = 0:(double(len(keys))-1);
+    for i=int64(inds)
         name = char(keys{i});
         if isvarname(name)
             assignin('caller', name, values{i});

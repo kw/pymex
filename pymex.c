@@ -68,7 +68,7 @@ enum PYMEX_COMMAND {
 
 static PyObject* numpy = NULL;
 
-static void ExitFcn() {
+static void ExitFcn(void) {
   Py_XDECREF(numpy);
   /* numpy doesn't seem to like attempts to reinitialize it, so we'll avoid
      this problem by never finalizing python. What could possibly go wrong? */

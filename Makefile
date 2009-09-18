@@ -9,7 +9,7 @@ DEBUG ?= $(if $(wildcard .debug_1),1,0)
 
 TARGET = $(word 1, $(wildcard pymex.mex*) pymex.mex)
 
-MEXFLAGS=-g -argcheck
+MEXFLAGS=
 MEX=${MATLAB}/bin/mex -f ./mexopts.sh
 
 all: ${TARGET}

@@ -15,9 +15,11 @@ classdef intseq < pytypes.object
     
     methods (Static)
         function key = fixkey(key)
-            if isnumeric(key) && ~isinteger(key)
+            if isinteger(key)
+                % ok!
+            elseif isnumeric(key) && ~isinteger(key)
                 key = int64(key);
-            elseif isa(key, 'pytypes.object') 
+            elseif isa(key, 'pytypes.object')
                 [int long slice None] = pybuiltins('int','long','slice','None');
                 if isinstance(key, slice)
                     % Adjust slice components
@@ -32,14 +34,15 @@ classdef intseq < pytypes.object
                             end
                         end
                     end
-                end
-            end
-            try
-                numpy = pyimport('numpy');
-                key = methodcall(numpy, 'array', key);
-                key = methodcall(key, 'astype', 'int64');
-            catch %#ok
-                % ignore error and pass along the key            
+                else
+                    try
+                        numpy = pyimport('numpy');
+                        key = methodcall(numpy, 'array', key);
+                        key = methodcall(key, 'astype', 'int64');
+                    catch %#ok
+                        % ignore error and pass along the key
+                    end
+                end              
             end
         end
     end

@@ -275,7 +275,7 @@ classdef object < BasePyObject
               case '{}'
                   [slice None] = pybuiltins('slice', 'None');
                   for s = 1:numel(subs)
-                      if isequal(subs{s}, ':')
+                      if ischar(subs{s}) && isequal(subs{s}, ':')
                           subs{s} = call(slice, None);
                       end
                   end                   
@@ -290,7 +290,7 @@ classdef object < BasePyObject
           if numel(S) > 1
               out = subsref(out, S(2:end));
           end          
-          if ~(nargout == 0 && is(py.None, out))
+          if ~(nargout == 0 && is(pybuiltins('None'), out))
               varargout{1} = out;
           end                  
       end
@@ -338,13 +338,14 @@ classdef object < BasePyObject
       end
       
       function c = horzcat(varargin)
-          c = py.list({});
+          [list tuple] = pybuiltins('list');
+          c = list({});
           for i = 1:numel(varargin)
               if ~isa(varargin{i}, 'BasePyObject')
                   if isnumeric(varargin{i})
-                      varargin{i} = py.tuple(num2cell(varargin{i}));
+                      varargin{i} = tuple(num2cell(varargin{i}));
                   else
-                      varargin{i} = py.tuple(varargin(i));
+                      varargin{i} = tuple(varargin(i));
                   end
               end
               if hasattr(varargin{i}, '__iter__')
@@ -375,13 +376,13 @@ classdef object < BasePyObject
   methods (Static)
       function pyobj = loadobj(pstruct)
           if ~pstruct.pickled
-              pyobj = py.None;
+              pyobj = pybuiltins('None');
           else
               try
                   loads = getattr(pyimport('pickle'), 'loads');
                   pyobj = call(loads, pstruct.string);
               catch %#ok<CTCH>
-                  pyobj = py.None;
+                  pyobj = pybuiltins('None');
                   warning('pyobj:unpickle', 'could not load pickled object');
               end
           end

@@ -1,7 +1,6 @@
 #define PRIVATE static
 
 PRIVATE char* PyMX_Marker = "PyMXObject";
-PRIVATE mxArray* mro (PyObject* pyobj);
 PRIVATE mxArray* box(PyObject* pyobj);
 PRIVATE mxArray* boxb(PyObject* pyobj);
 PRIVATE PyObject* unbox (const mxArray* mxobj);
@@ -18,7 +17,6 @@ PRIVATE mxArray* PySequence_to_mxCell(PyObject* pyobj);
 PRIVATE int PySequence_is_Numeric(PyObject* pyobj);
 PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj);
 PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj);
-PRIVATE PyObject* mxCell_to_PyObject(const mxArray* mxobj);
 PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex i);
 PRIVATE PyObject* mxNonScalar_to_PyList(const mxArray* mxobj);
 PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj);
@@ -91,7 +89,6 @@ PRIVATE mxArray* box_by_type(PyObject* pyobj) {
                
 PRIVATE mxArray* box (PyObject* pyobj) {
   mxArray* boxed = NULL;
-  mxArray* args[1];
   if (!pyobj) {
     PYMEX_DEBUG("Attempted to box null object.");
   }
@@ -247,14 +244,9 @@ PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
   default:
     mexErrMsgIdAndTxt("pymex:convertMXtoPY", "Don't know how to convert %s", 
 		      mxGetClassName(mxobj));
+    return NULL;
   }
 #undef DECODE
-}
-
-PRIVATE PyObject* PyTuple_Single(PyObject* pyobj) {
-  PyObject* tuple = PyTuple_New(1);
-  PyTuple_SetItem(tuple,0, pyobj);
-  return tuple;
 }
 
 PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
