@@ -122,9 +122,13 @@ classdef object < BasePyObject
       
       function r = call(obj, varargin)
           iskw = cellfun(@(o) isa(o, 'kw'), varargin);
-          kwargs = [varargin{iskw}];
+          kwargs = horzcat(varargin{iskw});
           args = varargin(~iskw);
-          r = pymex('CALL', obj, args, kwargs);
+          if numel(kwargs) > 0
+              r = pymex('CALL', obj, args, dict(kwargs));
+          else
+              r = pymex('CALL', obj, args);
+          end
       end
       
       function r = methodcall(obj, method, varargin)

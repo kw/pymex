@@ -16,8 +16,7 @@ if nargin > 0
 elseif nargout == 0
     keys = b.keys();
     values = b.values();
-    inds = 0:len(keys);
-    for i=inds
+    for i=0:(double(len(keys))-1)
         name = char(keys{i});
         if isvarname(name)
             assignin('caller', name, values{i});
