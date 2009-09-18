@@ -70,9 +70,7 @@ static PyObject* numpy = NULL;
 
 static void ExitFcn(void) {
   Py_XDECREF(numpy);
-  /* numpy doesn't seem to like attempts to reinitialize it, so we'll avoid
-     this problem by never finalizing python. What could possibly go wrong? */
-  /*Py_Finalize();*/
+  Py_Finalize();
   PYMEX_DEBUG("[python: finalized]\n");
 }
 
@@ -87,7 +85,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     Py_DECREF(name);
     PYMEX_DEBUG("[numpy: module imported]\n");
     mexAtExit(ExitFcn);
-  }   
+    /* FIXME
+       To temporarily deal with the reloading problem,
+       here's a mexLock that is never released. You can
+       release it manually with pymex('MEXUNLOCK') if
+       you'd like, of course. Good luck with that. */
+    mexLock();
+  }
 
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
     if (nlhs == 1) {

@@ -145,7 +145,7 @@ PYMEX(CALL, 2,3, {
       mexErrMsgIdAndTxt("python:NotTuple", "args must be a tuple");    
     PyObject* kwargs = NULL;
     if (nrhs > 2) {
-      kwargs = PyDict_from_KW(prhs[2]);
+      kwargs = unbox(prhs[2]);
       if (kwargs && !PyDict_Check(kwargs))
 	mexErrMsgIdAndTxt("python:NoKWargs", "kwargs must be a dict or null");
     }
@@ -226,20 +226,7 @@ PYMEX(TO_NDARRAY, 1, 1, {
   })
 
 PYMEX(FROM_NDARRAY, 1, 1, {
-    PyObject* obj = unbox(prhs[0]);
-    mxClassID class = PyArrayType_to_mxClassID(PyArray_TYPE(obj));
-    int nd = PyArray_NDIM(obj);
-    npy_intp* ndims = PyArray_DIMS(obj);
-    mwSize mxdims[nd];
-    mwSize i;
-    for (i=0; i<nd; i++) {
-      mxdims[i] = (mwSize) ndims[i];
-    }
-    mxArray* result = mxCreateNumericArray(nd, mxdims, class, mxREAL);
-    PyObject* pyresult = mxArray_to_PyArray(result, false);
-    PyArray_CopyInto((PyArrayObject*) pyresult, (PyArrayObject*) obj);
-    Py_DECREF(pyresult);
-    plhs[0] = result;
+    plhs[0] = PyArray_to_mxArray(unbox(prhs[0]));
   })
 
     
