@@ -83,6 +83,30 @@ classdef object < BasePyObject
           tf = ~logical(obj);
       end
       
+      function tf = lt(a, b)
+          tf = pymex('LT', a, b);
+      end
+      
+      function tf = le(a, b)
+          tf = pymex('LE', a, b);
+      end
+      
+      function tf = eq(a, b)
+          tf = pymex('EQ', a, b);
+      end
+      
+      function tf = gt(a, b)
+          tf = pymex('GT', a, b);
+      end
+      
+      function tf = ge(a, b)
+          tf = pymex('GE', a, b);
+      end
+      
+      function tf = ne(a, b)
+          tf = pymex('NE', a, b);
+      end
+      
       function attr = getattr(obj, attrname)
           attr = pymex('GET_ATTR', obj, attrname);
       end

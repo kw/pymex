@@ -81,6 +81,24 @@ PYMEX_UNARY_OP(ABS, PyNumber_Absolute)
 PYMEX_UNARY_OP(INVERT, PyNumber_Invert)
 #undef PYMEX_UNARY_OP
 
+#define PYMEX_CMP_OP(name)					\
+  PYMEX(name, 2,2, {						\
+      PyObject* A = unboxn(prhs[0]);				\
+      PyObject* B = unboxn(prhs[1]);				\
+      plhs[0] = box(PyObject_RichCompare(A, B, Py_##name));	\
+      Py_XDECREF(A);						\
+      Py_XDECREF(B);						\
+    })
+
+PYMEX_CMP_OP(LT)
+PYMEX_CMP_OP(LE)
+PYMEX_CMP_OP(EQ)
+PYMEX_CMP_OP(GT)
+PYMEX_CMP_OP(GE)
+PYMEX_CMP_OP(NE)
+
+#undef PYMEX_CMP_OP
+
 PYMEX(POWER, 2,3, {
     PyObject* x = unboxn(prhs[0]);
     PyObject* y = unboxn(prhs[1]);
@@ -116,7 +134,7 @@ PYMEX(GET_TYPE, 1,1, {
     plhs[0] = box(PyObject_Type(pyobj));
   })
 
-PYMEX(SCALAR_TO_PYOBJ, 1,1, {
+PYMEX(TO_PYOBJECT, 1,1, {
     plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
   })
 
@@ -220,7 +238,8 @@ PYMEX(RUN_SIMPLE_STRING, 1, 1, {
 PYMEX(AS_PYCOBJECT, 1, 1, {
     plhs[0] = box(PyCObject_from_mxArray(prhs[0]));
   })
-		  
+
+/*		  
 PYMEX(TO_NDARRAY, 1, 1, {
     plhs[0] = box(mxArray_to_PyArray(prhs[0], true));
   })
@@ -228,5 +247,5 @@ PYMEX(TO_NDARRAY, 1, 1, {
 PYMEX(FROM_NDARRAY, 1, 1, {
     plhs[0] = PyArray_to_mxArray(unbox(prhs[0]));
   })
-
+*/
     
