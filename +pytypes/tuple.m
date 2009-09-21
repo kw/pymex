@@ -1,2 +1,2 @@
-function x = tuple()
-x = pytypes.intseq();
+classdef tuple < pytypes.intseq
+end

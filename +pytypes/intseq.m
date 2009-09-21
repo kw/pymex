@@ -5,45 +5,35 @@
 % more convenient.
 classdef intseq < pytypes.object
     methods % Overrides
-        function item = getitem(obj, key)
-            item = getitem@pytypes.object(obj, pytypes.intseq.fixkey(key));
+        function item = getitem(obj, varargin)
+            subs = pytypes.intseq.fixkey(varargin{:});
+            item = getitem@pytypes.object(obj, subs{:});
         end
-        function setitem(obj, key, val)
-            setitem@pytypes.object(obj, pytypes.intseq.fixkey(key), val);
+        function setitem(obj, val, varargin)
+            subs = pytypes.intseq.fixkey(varargin{:});
+            setitem@pytypes.object(obj, val, subs{:});
         end
     end
     
     methods (Static)
-        function key = fixkey(key)
-            if isinteger(key)
-                % ok!
-            elseif isnumeric(key) && ~isinteger(key)
-                key = int64(key);
-            elseif isa(key, 'pytypes.object')
-                [int long slice None] = pybuiltins('int','long','slice','None');
-                if isinstance(key, slice)
-                    % Adjust slice components
-                    components = {'start','step','stop'};
-                    for c = components
-                        st = getattr(key, c{1});
-                        t = type(st);
-                        if is(st,None) && ~(is(t,int) || is(t,long))
-                            try
-                                setattr(key, c{1}, long(st));
-                            catch                                
-                            end
-                        end
-                    end
-                else
-                    try
-                        numpy = pyimport('numpy');
-                        key = methodcall(numpy, 'array', key);
-                        key = methodcall(key, 'astype', 'int64');
-                    catch %#ok
-                        % ignore error and pass along the key
-                    end
-                end              
-            end
+        function subs = fixkey(varargin)
+            subs = cell(size(varargin));            
+            for i=1:numel(varargin)
+                key = varargin{i};
+                if isempty(key)
+                    %ignore
+                elseif isnumeric(key)
+                    key = py.int(key);                    
+                elseif islogical(key)
+                    key = py.bool(key);
+                elseif iscell(key)
+                    key = pytypes.intseq.fixkey(key{:});
+                    key = py.slice(key{:});
+                elseif ~isa(key,'pytypes.object')
+                    error('IntegerIndexedSequence:BadKey','Don''t know what to do with key of type %s', class(key));
+                end
+                subs{i} = key;
+            end            
         end
     end
 end

@@ -1,4 +1,4 @@
-classdef object < BasePyObject
+classdef object < pytypes.voidptr
   methods
       function objdir = dir(obj)
           objdir = pymex('DIR', obj);
@@ -111,7 +111,14 @@ classdef object < BasePyObject
           attr = pymex('GET_ATTR', obj, attrname);
       end
       
-      function item = getitem(obj, key)
+      function item = getitem(obj, varargin)
+          if numel(varargin) > 1
+              key = varargin;
+          elseif numel(varargin) == 1
+              key = varargin{1};
+          else
+              key = {};
+          end
           item = pymex('GET_ITEM', obj, key);
       end
       
@@ -123,7 +130,14 @@ classdef object < BasePyObject
           tf = pymex('HAS_ATTR', obj, attrname);
       end
       
-      function setitem(obj, key, val)
+      function setitem(obj, val, varargin)
+          if numel(varargin) > 1
+              key = varargin;
+          elseif numel(varargin) == 1
+              key = varargin{1};
+          else
+              key = {};
+          end
           pymex('SET_ITEM', obj, key, val);
       end
       
@@ -131,17 +145,8 @@ classdef object < BasePyObject
           c = pymex('TO_STR', obj);
       end
       
-      function t = type(obj)
-          if isempty(obj.pytype)              
-              if obj.pointer == uint64(0)
-                  t = pytypes.null();
-              else
-                  t = pymex('GET_TYPE', obj);
-              end
-              obj.pytype = t;
-          else
-              t = obj.pytype;
-          end
+      function t = type(obj)         
+          t = pymex('GET_TYPE', obj);
       end      
       
       function r = call(obj, varargin)
@@ -160,7 +165,7 @@ classdef object < BasePyObject
       end
       
       function r = abs(obj)
-          r = methodcall(obj, '__abs__');          
+          r = pycall('abs', obj);          
       end
       
       function r = doc(obj)
@@ -168,27 +173,27 @@ classdef object < BasePyObject
       end
       
       function r = hash(obj)
-          r = methodcall(obj, '__hash__');
+          r = pycall('hash',obj);          
       end
       
       function r = hex(obj)
-          r = methodcall(obj, '__hex__');         
+          r = pycall('hex',obj);          
       end
       
       function r = oct(obj)
-          r = methodcall(obj, '__oct__');          
+          r = pycall('oct',obj);
       end
       
       function r = str(obj)
-          r = methodcall(obj, '__str__');
+          r = pycall('str',obj);          
       end
       
       function r = repr(obj)
-          r = methodcall(obj, '__repr__');
+          r = pycall('repr',obj);          
       end
       
       function r = len(obj)
-          r = methodcall(obj, '__len__');
+          r = pycall('len',obj);          
       end
       
       function r = name(obj)
@@ -196,8 +201,7 @@ classdef object < BasePyObject
       end
       
       function r = iter(obj)
-          pybuiltins iter;
-          r = call(iter, obj);
+          r = pycall('iter',obj);
       end
       
       function n = double(obj)
@@ -241,27 +245,22 @@ classdef object < BasePyObject
       end
       
       function disp(obj)
-          str = char(obj);
-          toolong = 80*24;
-          toomany = 40;
-          newlines = strfind(str, char(10));
-          
-          if numel(newlines) > toomany
-              fprintf('%s\n...<truncated: too many lines>...\n', str(1:newlines(toomany)-1));
-          elseif numel(str) > toolong
-              fprintf('%s\n...<truncated: too long>...\n', str(1:toolong));
-          %elseif numel(newlines) == 0 && numel(str) < 80
-          %    fprintf('%s\n', typename, str);
+          if pytypes.object.disp_info             
+              fprintf('%s 0x%s:\n', char(repr(type(obj))), ptrstring(obj));
+          end
+          if pytypes.object.disp_repr
+              s = repr(obj);
           else
-              fprintf('%s\n', str);             
-          end              
+              s = str(obj);
+          end
+          disp(char(s));              
       end
       
       function n = numel(obj, varargin) %#ok<MANU>
           n = 1;
       end
       
-      function s = size(obj, varargin)
+      function s = size(obj, varargin)          
           if hasattr(obj,'__len__')
               s = [1 double(len(obj))];
           else
@@ -303,13 +302,9 @@ classdef object < BasePyObject
                           subs{s} = call(slice, None);
                       end
                   end                   
-                  if numel(subs) > 1
-                      out = getitem(out, subs);
-                  else
-                      out = getitem(out, subs{1});
-                  end
+                  out = getitem(out, subs{:});
               otherwise
-                  error('wtf is "%s" doing in a substruct?', S(1).type);                  
+                  error('pymex:subsref:wtf','wtf is "%s" doing in a substruct?', S(1).type);                  
           end
           if numel(S) > 1
               out = subsref(out, S(2:end));
@@ -339,14 +334,10 @@ classdef object < BasePyObject
                           if isequal(subs{s}, ':')
                               subs{s} = call(slice, None);
                           end
-                      end
-                      if numel(subs) > 1
-                          setitem(obj, subs, val);
-                      else
-                          setitem(obj, subs{1}, val);
-                      end
+                      end                      
+                      setitem(obj, val, subs{:});
                   otherwise
-                      error('wtf is "%s" doing in a substruct?', S.type);
+                      error('pymex:subsasgn:wtf','wtf is "%s" doing in a substruct?', S.type);
               end
           end
       end
@@ -361,11 +352,12 @@ classdef object < BasePyObject
           n = double(n);          
       end
       
-      function c = horzcat(varargin)
+      function c = cat(dim, varargin) %#ok<MANU>
+          % ignore dim for general object
           [list tuple] = pybuiltins('list');
           c = list({});
           for i = 1:numel(varargin)
-              if ~isa(varargin{i}, 'BasePyObject')
+              if ~isa(varargin{i}, 'pytypes.object')
                   if isnumeric(varargin{i})
                       varargin{i} = tuple(num2cell(varargin{i}));
                   else
@@ -377,38 +369,51 @@ classdef object < BasePyObject
               else
                   methodcall(c, 'append', varargin{i});
               end
-          end          
+          end       
       end
       
-      function c = vertcat(varargin)
-          c = horzcat(varargin{:});
-      end
-      
-      function c = cat(dim, varargin) %#ok<MANU>
-          % ignore dim for general object
-          c = horzcat(varargin{:});
-      end
-      
-      function n = end(obj, k, n) %#ok<INUSD>
+      function e = end(obj, k, n) %#ok<INUSD>
           if k > 1
               warning('pymex:end','End of dimension %d requested, but generic objects don''t have that many.',k);
           end
-          n = len(obj)-int64(1);
+          e = len(obj)-1;
       end
   end
   
   methods (Static)
       function pyobj = loadobj(pstruct)
           if ~pstruct.pickled
-              pyobj = pybuiltins('None');
+              pyobj = pytypes.voidptr;
           else
               try
                   loads = getattr(pyimport('pickle'), 'loads');
                   pyobj = call(loads, pstruct.string);
               catch %#ok<CTCH>
-                  pyobj = pybuiltins('None');
+                  pyobj = pytypes.voidptr;
                   warning('pyobj:unpickle', 'could not load pickled object');
               end
+          end
+      end
+      
+      function tf = disp_repr(set)
+          persistent USE_REPR
+          if isempty(USE_REPR)
+              USE_REPR = false;
+          end
+          tf = USE_REPR;
+          if nargin > 0
+              USE_REPR = logical(set);
+          end
+      end
+      
+      function tf = disp_info(set)
+          persistent USE_INFO
+          if isempty(USE_INFO)
+              USE_INFO = false;
+          end
+          tf = USE_INFO;
+          if nargin > 0
+              USE_INFO = logical(set);
           end
       end
   end

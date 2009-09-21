@@ -19,8 +19,8 @@ classdef kw
             arg = 0;
             for i = 1:2:nargin
                 arg = arg + 1;
-                kwargs(arg).keyword = varargin{i};
-                kwargs(arg).value = varargin{i+1};
+                kwargs(arg).keyword = varargin{i}; %#ok<AGROW>
+                kwargs(arg).value = varargin{i+1}; %#ok<AGROW>
             end
             if arg==0
                 kwargs(1) = [];

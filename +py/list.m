@@ -1,3 +1,3 @@
-function l = pylist(varargin)
+function l = list(varargin)
 list = pybuiltins('list');
 l = list(varargin);

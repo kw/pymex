@@ -6,10 +6,9 @@
    When converting from Numpy to MATLAB arrays, we must naturally increase
    the number of dimensions for small-dimensioned arrays, but going the other
    direction isn't necessarily clear.
-   If PYMEX_SQUEEZE_SMALL_ARRAYS is true, PYMEX will detect singleton dimensions
+   If PYMEX_SQUEEZE_SMALL_ARRAYS is true, pymex will detect singleton dimensions
    of a 2D array and remove them. This might make broadcasting easier, but
    it also causes vectors to forget their orientation. 
-   I'll leave it as true for now. 
  */
 #ifndef PYMEX_SQUEEZE_SMALL_ARRAYS
 #define PYMEX_SQUEEZE_SMALL_ARRAYS 1
@@ -45,7 +44,7 @@ PRIVATE mxArray* box_by_type(PyObject* pyobj) {
   mxArray* which;
   int ret = -1;
   if (!pyobj) {
-    ret = mexCallMATLAB(1,&box,0,NULL,"pytypes.null");
+    ret = mexCallMATLAB(1,&box,0,NULL,"pytypes.voidptr");
   }
   else {
     PyObject* type = (PyObject*) pyobj->ob_type;

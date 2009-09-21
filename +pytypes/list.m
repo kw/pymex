@@ -1,2 +1,2 @@
-function x = list()
-x = pytypes.intseq();
+classdef list < pytypes.intseq
+end

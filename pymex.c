@@ -101,7 +101,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 #undef PYMEX
     } 
     else {
-      mexEvalString("help('pymex')");
+      mexEvalString("help('pymex.m')");
     }
   }
   else if (mxIsNumeric(prhs[0])) {
