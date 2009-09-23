@@ -22,6 +22,12 @@ classdef ndarray < pytypes.intseq
         end
         
         
+        function m = cat(dim, varargin)
+            np = pyimport('numpy');
+            dim = py.int(dim-1);            
+            m = np.concatenate(varargin, dim);
+        end
+        
         function e = end(obj, k, n)
             s = size(obj);
             if k > numel(s)
@@ -30,5 +36,7 @@ classdef ndarray < pytypes.intseq
                 e = s(k)-1;
             end
         end
+        
+    
     end
 end
