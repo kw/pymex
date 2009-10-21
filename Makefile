@@ -1,8 +1,3 @@
-PYTHON ?= $(shell which python)
-PYTHONCONFIG ?= $(shell which python-config)
-
-NUMPY_INCLUDE ?= $(shell ${PYTHON} -c 'import numpy; print(numpy.get_include());')
-
 MATLAB ?= $(shell matlab -e | grep MATLAB= | sed s/^MATLAB=//)
 
 DEBUG ?= $(if $(wildcard .debug_1),1,0)
@@ -14,9 +9,8 @@ MEX=${MATLAB}/bin/mex -f ./mexopts.sh
 
 all: ${TARGET}
 
-${TARGET}: pymex.c pymex_static.c pymex.def.c .debug_${DEBUG}
+${TARGET}: pymex.c pymex_static.c pymex.def.c mexopts.sh .debug_${DEBUG}
 	$(MEX) $(MEXFLAGS) \
-	-I${NUMPY_INCLUDE} \
 	-DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c
 
 .debug_0:

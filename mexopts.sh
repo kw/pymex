@@ -30,12 +30,6 @@
     else  
         MLIBS="-L$TMW_ROOT/bin/$Arch -lmx -lmex -lmat"
     fi
-
-    PY_CFLAGS=`python-config --cflags`
-    PY_LDFLAGS=`python-config --ldflags` 
-    PY_LIBDIR=-L`python-config --prefix`/lib
-    PY_LDFLAGS="$PY_LDFLAGS $PY_LIBDIR"
-
     case "$Arch" in
         Undetermined)
 #----------------------------------------------------------------------------
@@ -56,7 +50,7 @@
             # CkeyLanguage: C
             # CkeyVersion:
             CC='gcc'
-            CFLAGS="$PY_CFLAGS -ansi -D_GNU_SOURCE"
+            CFLAGS='-ansi -D_GNU_SOURCE'
             CFLAGS="$CFLAGS -fPIC -pthread -m32"
             CFLAGS="$CFLAGS  -fexceptions"
             CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64" 
@@ -70,7 +64,7 @@
             # C++keyLanguage: C++
             # C++keyVersion: 
             CXX='g++'
-            CXXFLAGS="$CXXFLAGS -ansi -D_GNU_SOURCE"
+            CXXFLAGS='-ansi -D_GNU_SOURCE'
             CXXFLAGS="$CXXFLAGS -D_FILE_OFFSET_BITS=64" 
             CXXFLAGS="$CXXFLAGS -fPIC -pthread"
             CXXLIBS="$RPATH $MLIBS -lm"
@@ -91,7 +85,7 @@
 #
             LD="$COMPILER"
             LDEXTENSION='.mexglx'
-            LDFLAGS="$PY_LDFLAGS -pthread -shared -m32 -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE -Wl,--no-undefined"
+            LDFLAGS="-pthread -shared -m32 -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE -Wl,--no-undefined"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
 #
@@ -107,7 +101,7 @@
             # CkeyLanguage: C
             # CkeyVersion:
             CC='gcc'
-            CFLAGS="$PY_CFLAGS -ansi -D_GNU_SOURCE"
+            CFLAGS='-ansi -D_GNU_SOURCE'
             CFLAGS="$CFLAGS  -fexceptions"
             CFLAGS="$CFLAGS -fPIC -fno-omit-frame-pointer -pthread"
             CLIBS="$RPATH $MLIBS -lm"
@@ -120,7 +114,7 @@
             # C++keyLanguage: C++
             # C++keyVersion: 
             CXX='g++'
-            CXXFLAGS="$CXXFLAGS -ansi -D_GNU_SOURCE"
+            CXXFLAGS='-ansi -D_GNU_SOURCE'
             CXXFLAGS="$CXXFLAGS -fPIC -fno-omit-frame-pointer -pthread"
             CXXLIBS="$RPATH $MLIBS -lm"
             CXXOPTIMFLAGS='-O -DNDEBUG'
@@ -140,7 +134,7 @@
 #
             LD="$COMPILER"
             LDEXTENSION='.mexa64'
-            LDFLAGS="$PY_LDFLAGS -pthread -shared -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE -Wl,--no-undefined"
+            LDFLAGS="-pthread -shared -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE -Wl,--no-undefined"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
 #
@@ -253,7 +247,7 @@
             # CkeyLanguage: C
             # CkeyVersion:
             CC='gcc-4.0'
-            CFLAGS="$PY_CFLAGS -fno-common -no-cpp-precomp"
+            CFLAGS='-fno-common -no-cpp-precomp'
             CFLAGS="$CFLAGS  -fexceptions"
             CLIBS="$MLIBS"
             COPTIMFLAGS='-O3 -DNDEBUG'
@@ -283,7 +277,7 @@
 #
             LD="$CC"
             LDEXTENSION='.mexmaci'
-            LDFLAGS="$PY_LDFLAGS -Wl,-flat_namespace -undefined suppress"
+            LDFLAGS='-Wl,-flat_namespace -undefined suppress'
             LDFLAGS="$LDFLAGS -bundle -Wl,-exported_symbols_list,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
@@ -299,7 +293,7 @@
             # CkeyLanguage: C
             # CkeyVersion:
             CC='gcc-4.0'
-            CFLAGS="$PY_CFLAGS -fno-common -no-cpp-precomp -fexceptions -arch x86_64"
+            CFLAGS='-fno-common -no-cpp-precomp -fexceptions -arch x86_64'
             CLIBS="$MLIBS -lstdc++"
             COPTIMFLAGS='-O3 -DNDEBUG'
             CDEBUGFLAGS='-g'
@@ -327,7 +321,7 @@
 #
             LD="$CC"
             LDEXTENSION='.mexmaci64'
-            LDFLAGS="$PY_LDFLAGS -Wl,-twolevel_namespace -undefined error -arch x86_64"
+            LDFLAGS='-Wl,-twolevel_namespace -undefined error -arch x86_64'
             LDFLAGS="$LDFLAGS -bundle -Wl,-exported_symbols_list,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
@@ -344,10 +338,14 @@
 #
 #----------------------------------------------------------------------------
 #           CC="$CC"
-#           CFLAGS="$CFLAGS"
+
+NUMPY_INCLUDE=`python -c 'import numpy; print(numpy.get_include());'`
+PY_CFLAGS=`python-config --cflags`
+CFLAGS="$CFLAGS $PY_CFLAGS -I$NUMPY_INCLUDE"
 #           COPTIMFLAGS="$COPTIMFLAGS"
 #           CDEBUGFLAGS="$CDEBUGFLAGS"
-#           CLIBS="$CLIBS"
+PY_CLIBS=`python-config --libs`
+CLIBS="$CLIBS $PY_CLIBS"
 #
 #           FC="$FC"
 #           FFLAGS="$FFLAGS"
@@ -356,7 +354,11 @@
 #           FLIBS="$FLIBS"
 #
 #           LD="$LD"
-#           LDFLAGS="$LDFLAGS"
+PY_LDFLAGS=`python-config --ldflags`
+# For some reason my user-installed 2.6 build doesn't put an appropriate
+# -L item in LDFLAGS, so I'm generating one of my own.
+PY_LIBDIR=-L`python-config --prefix`/lib
+LDFLAGS="$LDFLAGS $PY_LDFLAGS $PY_LIBDIR"
 #           LDOPTIMFLAGS="$LDOPTIMFLAGS"
 #           LDDEBUGFLAGS="$LDDEBUGFLAGS"
 #----------------------------------------------------------------------------
