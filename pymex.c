@@ -50,6 +50,7 @@ void name##_pymexfun(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 /* Static utility stuff goes in here */
 #include "pymex_static.c"
+#include "pymexmodule.c"
 
 /* Define pymex command enums via x-macro */
 #define PYMEX(name, min, max, body) PYMEX_ENUM(name,min,max,body)
@@ -84,6 +85,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     numpy = PyImport_Import(name);    
     Py_DECREF(name);
     PYMEX_DEBUG("[numpy: module imported]\n");
+    initpymexmodule();
     mexAtExit(ExitFcn);
     /* FIXME
        To temporarily deal with the reloading problem,
@@ -163,4 +165,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     mexErrMsgIdAndTxt(id, msg);
   }
 }
+
 
