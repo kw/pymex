@@ -31,7 +31,7 @@ classdef kw
             dict = pybuiltins('dict');
             d = dict();
             for i=1:numel(kwargs)
-                d{kwargs(i).keyword} = kwargs{i}.value;
+                d{kwargs(i).keyword} = kwargs(i).value;
             end
         end
     end
