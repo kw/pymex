@@ -76,7 +76,7 @@ static PyMethodDef PymexMethods[] = {
 PyMODINIT_FUNC
 initpymexmodule(void)
 {
-  PyObject* m = Py_InitModule("pymex", PymexMethods);
+  PyObject* m = Py_InitModule("libmex", PymexMethods);
   if (m == NULL) return;
   import_array();
 }

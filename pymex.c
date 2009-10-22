@@ -1,5 +1,6 @@
 #include "pymex.h"
 #include <mex.h>
+#define XMACRO_DEFS "commands.c"
 
 /* Macros used during x-macro expansion. */
 
@@ -37,14 +38,14 @@ void name##_pymexfun(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 /* Define pymex command enums via x-macro */
 #define PYMEX(name, min, max, body) PYMEX_ENUM(name,min,max,body)
 enum PYMEX_COMMAND {
-#include "pymex.def.c"
+#include XMACRO_DEFS
   NUMBER_OF_PYMEX_COMMANDS,
 };
 #undef PYMEX
 
 /* Define pymex commands via x-macro */
 #define PYMEX(name, min, max, body) PYMEX_DEFINE(name,min,max,body)
-#include "pymex.def.c"
+#include XMACRO_DEFS
 #undef PYMEX
 
 /* mex body and related functions */
@@ -72,7 +73,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (nlhs == 1) {
       plhs[0] = mxCreateCellMatrix(1,NUMBER_OF_PYMEX_COMMANDS);
 #define PYMEX(name,min,max,body) PYMEX_MAKECELL(name,min,max,body)
-#include "pymex.def.c"
+#include XMACRO_DEFS
 #undef PYMEX
     } 
     else {
@@ -85,7 +86,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     /* Switch body defined via x-macro expansion */
     switch (cmd) {
 #define PYMEX(name,min,max,body) PYMEX_CASE(name,min,max,body)
-#include "pymex.def.c"
+#include XMACRO_DEFS
 #undef PYMEX
     default:
       mexErrMsgIdAndTxt("pymex:NotImplemented", "pymex command %d not implemented", cmd);
@@ -97,7 +98,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       mexErrMsgIdAndTxt("pymex:badstring", "Could not extract the command string for some reason.");
     } /* a bunch of else-ifs are generated here */
 #define PYMEX(name,min,max,body) PYMEX_STRCMP(name,min,max,body)
-#include "pymex.def.c"
+#include XMACRO_DEFS
 #undef PYMEX
     else {
       mexErrMsgIdAndTxt("pymex:NotImplemented", "pymex command '%s' not implemented", cmdstring);
