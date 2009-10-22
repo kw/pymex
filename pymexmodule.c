@@ -23,7 +23,7 @@ static PyObject* m_eval(PyObject* self, PyObject* args) {
   evalarray[0] = mxCreateString("base");
   evalarray[1] = mxCreateString(evalstring);
   mxArray* out = NULL;
-  int retval = mexCallMATLAB(1, &out, 2, &evalarray, "evalin");
+  int retval = mexCallMATLAB(1, &out, 2, evalarray, "evalin");
   mxDestroyArray(evalarray[0]);
   mxDestroyArray(evalarray[1]);
   if (retval)
