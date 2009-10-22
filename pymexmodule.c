@@ -5,7 +5,6 @@ static PyObject* m_printf(PyObject* self, PyObject* args) {
   PyObject* tuple = PySequence_GetSlice(args, 1, arglength+1);
   PyObject* out = PyString_Format(format, tuple);
   char* outstr = PyString_AsString(out);
-  printf("Got string (%s), sending to mexPrintf...\n", outstr);
   mexPrintf(outstr);
   Py_DECREF(out);
   Py_DECREF(tuple);
