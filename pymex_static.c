@@ -1,41 +1,10 @@
-#define PRIVATE static
+#include "pymex.h"
+#include <mex.h>
 
-/* PYMEX_SQUEEZE_SMALL_ARRAYS
-   MATLAB does not allow arrays to have fewer than 2 dimensions.
-   Numpy, on the other hand, allows even 1-d or even 0-d arrays (scalars).
-   When converting from Numpy to MATLAB arrays, we must naturally increase
-   the number of dimensions for small-dimensioned arrays, but going the other
-   direction isn't necessarily clear.
-   If PYMEX_SQUEEZE_SMALL_ARRAYS is true, pymex will detect singleton dimensions
-   of a 2D array and remove them. This might make broadcasting easier, but
-   it also causes vectors to forget their orientation. 
- */
-#ifndef PYMEX_SQUEEZE_SMALL_ARRAYS
-#define PYMEX_SQUEEZE_SMALL_ARRAYS 1
-#endif
 
-PRIVATE char* PyMX_Marker = "PyMXObject";
-PRIVATE mxArray* box(PyObject* pyobj);
-PRIVATE mxArray* boxb(PyObject* pyobj);
-PRIVATE PyObject* unbox (const mxArray* mxobj);
-PRIVATE PyObject* unboxn (const mxArray* mxobj);
-PRIVATE bool mxIsPyNull (const mxArray* mxobj);
-PRIVATE bool mxIsPyObject(const mxArray* mxobj);
-PRIVATE mxArray* PyObject_to_mxLogical(PyObject* pyobj);
-PRIVATE PyObject* mxChar_to_PyString(const mxArray* mxchar);
-PRIVATE mxArray* PyString_to_mxChar(PyObject* pystr);
-PRIVATE mxArray* PyObject_to_mxChar(PyObject* pyobj);
-PRIVATE mxArray* PySequence_to_mxCell(PyObject* pyobj);
-PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj);
-PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj);
-PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj);
-PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj);
-PRIVATE bool PyMXObj_Check(PyObject* pyobj);
-PRIVATE PyObject* PyCObject_from_mxArray(const mxArray* mxobj);
-PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate);
-PRIVATE mxArray* PyArray_to_mxArray(PyObject* pyobj);
+char* PyMX_Marker = "PyMXObject";
 
-PRIVATE mxArray* box_by_type(PyObject* pyobj) {
+mxArray* box_by_type(PyObject* pyobj) {
   PYMEX_DEBUG("Trying to box %p\n", pyobj);
   char* package = "pytypes.%s";
   char mlname[128] = {0};
@@ -97,7 +66,7 @@ PRIVATE mxArray* box_by_type(PyObject* pyobj) {
 }
 
                
-PRIVATE mxArray* box (PyObject* pyobj) {
+mxArray* box (PyObject* pyobj) {
   mxArray* boxed = NULL;
   if (!pyobj) {
     PYMEX_DEBUG("Attempted to box null object.");
@@ -113,12 +82,12 @@ PRIVATE mxArray* box (PyObject* pyobj) {
   return boxed;
 }
 
-PRIVATE mxArray* boxb (PyObject* pyobj) {
+mxArray* boxb (PyObject* pyobj) {
   Py_XINCREF(pyobj);
   return box(pyobj);
 }
 
-PRIVATE PyObject* unbox (const mxArray* mxobj) {  
+PyObject* unbox (const mxArray* mxobj) {  
   if (mxIsPyNull(mxobj)) {
     PYMEX_DEBUG("Attempt to unbox null object.");
     return NULL;
@@ -129,7 +98,7 @@ PRIVATE PyObject* unbox (const mxArray* mxobj) {
   }
 }
 
-PRIVATE PyObject* unboxn (const mxArray* mxobj) {
+PyObject* unboxn (const mxArray* mxobj) {
   PyObject* pyobj;
   if (mxIsPyObject(mxobj)) {
     pyobj = unbox(mxobj);
@@ -141,12 +110,12 @@ PRIVATE PyObject* unboxn (const mxArray* mxobj) {
   return pyobj;
 }
 
-PRIVATE bool mxIsPyNull (const mxArray* mxobj) {
+bool mxIsPyNull (const mxArray* mxobj) {
   void** ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
   return !*ptr;
 }
 
-PRIVATE bool mxIsPyObject(const mxArray* mxobj) {
+bool mxIsPyObject(const mxArray* mxobj) {
   mxArray* boolobj;
   mxArray* args[2];
   args[0] = (mxArray*) mxobj;
@@ -156,7 +125,7 @@ PRIVATE bool mxIsPyObject(const mxArray* mxobj) {
   return mxIsLogicalScalarTrue(boolobj);
 }
 
-PRIVATE PyObject* mxChar_to_PyString(const mxArray* mxchar) {
+PyObject* mxChar_to_PyString(const mxArray* mxchar) {
   if (!mxchar || !mxIsChar(mxchar))
     mexErrMsgTxt("Input isn't a mxChar");
   char* tempstring = mxArrayToString(mxchar);
@@ -169,7 +138,7 @@ PRIVATE PyObject* mxChar_to_PyString(const mxArray* mxchar) {
   return pystr;
 }
 
-PRIVATE mxArray* PyString_to_mxChar(PyObject* pystr) {
+mxArray* PyString_to_mxChar(PyObject* pystr) {
   if (!pystr || !PyString_Check(pystr))
     mexErrMsgTxt("Input isn't a PyString");
   char* tempstring = PyString_AsString( pystr);
@@ -177,7 +146,7 @@ PRIVATE mxArray* PyString_to_mxChar(PyObject* pystr) {
   return mxchar;
 }
 
-PRIVATE mxArray* PyObject_to_mxChar(PyObject* pyobj) {
+mxArray* PyObject_to_mxChar(PyObject* pyobj) {
   mxArray* mxchar;
   if (pyobj) {
     PyObject* pystr = PyObject_Str(pyobj);
@@ -190,12 +159,12 @@ PRIVATE mxArray* PyObject_to_mxChar(PyObject* pyobj) {
   return mxchar;
 }
 
-PRIVATE mxArray* PyObject_to_mxLogical(PyObject* pyobj) {
+mxArray* PyObject_to_mxLogical(PyObject* pyobj) {
   return mxCreateLogicalScalar(PyObject_IsTrue(pyobj));
 }
 
 /*
-PRIVATE PyObject* mxNonScalar_to_PyList(const mxArray* mxobj) {
+PyObject* mxNonScalar_to_PyList(const mxArray* mxobj) {
   mwSize numel = mxGetNumberOfElements(mxobj);
   PyObject* pyobj = PyList_New(numel);
   mwSize i;
@@ -214,7 +183,7 @@ PRIVATE PyObject* mxNonScalar_to_PyList(const mxArray* mxobj) {
 }
 */
 
-PRIVATE PyObject* mxCell_to_PyTuple(const mxArray* mxobj) {
+PyObject* mxCell_to_PyTuple(const mxArray* mxobj) {
   mwSize numel = mxGetNumberOfElements(mxobj);
   PyObject* pyobj = PyTuple_New(numel);
   mwSize i;
@@ -224,7 +193,7 @@ PRIVATE PyObject* mxCell_to_PyTuple(const mxArray* mxobj) {
   return pyobj;
 }
 /*
-PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
+PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
   void* ptr = mxGetData(mxobj);
 #define DECODE(fmt, type) return Py_BuildValue(#fmt, *(((type *) ptr)+index))
   switch (mxGetClassID(mxobj)) {
@@ -262,7 +231,7 @@ PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
 }
 */
 
-PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
+mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
   PyArray_Descr* type = PyArray_DescrFromType(NPY_FLOAT64);
   PyObject* array = PyArray_FromAny(pyobj, type, 0, 0, NPY_FARRAY, NULL);
   if (!array) return NULL;
@@ -271,7 +240,7 @@ PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
   return out;
 }
 
-PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj) {
+mxArray* PyObject_to_mxLong(PyObject* pyobj) {
   PyArray_Descr* type = PyArray_DescrFromType(NPY_INT64);
   PyObject* array = PyArray_FromAny(pyobj, type, 0, 0, NPY_FARRAY, NULL);
   if (!array) return NULL;
@@ -280,7 +249,7 @@ PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj) {
   return out;
 }
 
-PRIVATE mxArray* PySequence_to_mxCell(PyObject* pyobj) {
+mxArray* PySequence_to_mxCell(PyObject* pyobj) {
   PyObject* item;
   Py_ssize_t len = PySequence_Length(pyobj);
   mxArray* mxcell = mxCreateCellMatrix(1,len);
@@ -293,7 +262,7 @@ PRIVATE mxArray* PySequence_to_mxCell(PyObject* pyobj) {
   return mxcell;
 }
 /*
-PRIVATE int PySequence_is_Numeric(PyObject* pyobj) {
+int PySequence_is_Numeric(PyObject* pyobj) {
   PyObject* item;
   Py_ssize_t len = PySequence_Length(pyobj);
   bool hasfloat = 0;
@@ -325,7 +294,7 @@ PRIVATE int PySequence_is_Numeric(PyObject* pyobj) {
 }
 */
 
-PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
+PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   if (mxIsPyObject(mxobj)) {
     PyObject* pyobj = unbox(mxobj);
     Py_XINCREF(pyobj);
@@ -345,7 +314,7 @@ PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   }
 }
 
-PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
+mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
   PyObject* array = NULL;
   if (!pyobj)
     return box(pyobj); /* Null pointer */
@@ -369,21 +338,21 @@ PRIVATE mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return boxb(pyobj);
 }
 
-PRIVATE bool PyMXObj_Check(PyObject* pyobj) {
+bool PyMXObj_Check(PyObject* pyobj) {
   return PyCObject_Check(pyobj) && (PyCObject_GetDesc(pyobj) == (void*) PyMX_Marker);
 }
 
-PRIVATE void PyMXDestructor(void* mxobj, void* desc) {
+void PyMXDestructor(void* mxobj, void* desc) {
   mxDestroyArray((mxArray*) mxobj);
 }
 
-PRIVATE PyObject* PyCObject_from_mxArray(const mxArray* mxobj) {
+PyObject* PyCObject_from_mxArray(const mxArray* mxobj) {
   mxArray* copy = mxDuplicateArray(mxobj);
   mexMakeArrayPersistent(copy);
   return PyCObject_FromVoidPtrAndDesc((void*) copy, (void*) PyMX_Marker, PyMXDestructor);
 }
 
-PRIVATE int mxClassID_to_PyArrayType(mxClassID mxclass) {
+int mxClassID_to_PyArrayType(mxClassID mxclass) {
   switch (mxclass) {
   case mxLOGICAL_CLASS: return NPY_BOOL;
   case mxCHAR_CLASS: return NPY_STRING;
@@ -401,7 +370,7 @@ PRIVATE int mxClassID_to_PyArrayType(mxClassID mxclass) {
   }
 }
 
-PRIVATE mxClassID PyArrayType_to_mxClassID(int pytype) {
+mxClassID PyArrayType_to_mxClassID(int pytype) {
   switch (pytype) {
   case NPY_BOOL: return mxLOGICAL_CLASS;
   case NPY_STRING: return mxCHAR_CLASS;
@@ -421,7 +390,7 @@ PRIVATE mxClassID PyArrayType_to_mxClassID(int pytype) {
   }
 }
 
-PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate) {
+PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate) {
   PyObject* base = NULL;
   mxArray* ptr = (mxArray*) mxobj;
   if (duplicate) {
@@ -476,7 +445,7 @@ PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate) {
   return (PyObject*) array;
 }
 
-PRIVATE mxArray* PyArray_to_mxArray(PyObject* pyobj) {
+mxArray* PyArray_to_mxArray(PyObject* pyobj) {
   pyobj = PyArray_EnsureArray(pyobj);
   mxClassID class = PyArrayType_to_mxClassID(PyArray_TYPE(pyobj));
   int realnd = PyArray_NDIM(pyobj);
@@ -504,5 +473,3 @@ PRIVATE mxArray* PyArray_to_mxArray(PyObject* pyobj) {
   return result;
 }
 
-
-#undef PRIVATE

@@ -1,19 +1,5 @@
-#include <Python.h>
-#define NPY_USE_PYMEM 1
-#include <numpy/arrayobject.h>
-#include "mex.h"
-
-#ifndef PYMEX_DEBUG_FLAG
-#define PYMEX_DEBUG_FLAG 0
-#endif
-
-#if PYMEX_DEBUG_FLAG
-#define PYMEX_DEBUG(format, args...) mexPrintf(format,##args)
-#else
-#define PYMEX_DEBUG(format, args...) /*nop*/
-#endif
-
-
+#include "pymex.h"
+#include <mex.h>
 
 /* Macros used during x-macro expansion. */
 
@@ -48,10 +34,6 @@ void name##_pymexfun(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   name##_pymexfun(nlhs, plhs, nrhs-1, prhs+1);		\
   break;
 
-/* Static utility stuff goes in here */
-#include "pymex_static.c"
-#include "pymexmodule.c"
-
 /* Define pymex command enums via x-macro */
 #define PYMEX(name, min, max, body) PYMEX_ENUM(name,min,max,body)
 enum PYMEX_COMMAND {
@@ -67,10 +49,7 @@ enum PYMEX_COMMAND {
 
 /* mex body and related functions */
 
-static PyObject* numpy = NULL;
-
 static void ExitFcn(void) {
-  Py_XDECREF(numpy);
   Py_Finalize();
   PYMEX_DEBUG("[python: finalized]\n");
 }
@@ -79,12 +58,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (!Py_IsInitialized()) {
     Py_Initialize();
     PYMEX_DEBUG("[python: initialized]\n");
-    import_array();
-    PYMEX_DEBUG("[numpy: API imported]\n");
-    PyObject* name = PyString_FromString("numpy");
-    numpy = PyImport_Import(name);    
-    Py_DECREF(name);
-    PYMEX_DEBUG("[numpy: module imported]\n");
     initpymexmodule();
     mexAtExit(ExitFcn);
     /* FIXME

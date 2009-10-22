@@ -1,3 +1,10 @@
+#include <Python.h>
+#define PY_ARRAY_UNIQUE_SYMBOL PYMEX_ARRAY_API
+#define NPY_USE_PYMEM 1
+#include <numpy/arrayobject.h>
+#include "pymex.h"
+#include <mex.h>
+
 
 static PyObject* m_printf(PyObject* self, PyObject* args) {
   PyObject* format = PySequence_GetItem(args, 0);
@@ -71,4 +78,5 @@ initpymexmodule(void)
 {
   PyObject* m = Py_InitModule("pymex", PymexMethods);
   if (m == NULL) return;
+  import_array();
 }
