@@ -264,7 +264,8 @@ PRIVATE PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
 
 PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
   PyArray_Descr* type = PyArray_DescrFromType(NPY_FLOAT64);
-  PyObject* array = PyArray_FromAny(pyobj, type, 0, 0, 0, NULL);
+  PyObject* array = PyArray_FromAny(pyobj, type, 0, 0, NPY_FARRAY, NULL);
+  if (!array) return NULL;
   mxArray* out = PyArray_to_mxArray(array);
   Py_DECREF(array);
   return out;
@@ -272,7 +273,8 @@ PRIVATE mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
 
 PRIVATE mxArray* PyObject_to_mxLong(PyObject* pyobj) {
   PyArray_Descr* type = PyArray_DescrFromType(NPY_INT64);
-  PyObject* array = PyArray_FromAny(pyobj, type, 0, 0, 0, NULL);
+  PyObject* array = PyArray_FromAny(pyobj, type, 0, 0, NPY_FARRAY, NULL);
+  if (!array) return NULL;
   mxArray* out = PyArray_to_mxArray(array);
   Py_DECREF(array);
   return out;
@@ -333,7 +335,7 @@ PRIVATE PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
     return mxChar_to_PyString(mxobj);
   }
   else if (mxIsNumeric(mxobj) || mxIsLogical(mxobj)) {
-    return mxArray_to_PyArray(mxobj, true);
+    return PyArray_Return((PyArrayObject*) mxArray_to_PyArray(mxobj, true));
   }
   else if (mxIsCell(mxobj)) {
     return mxCell_to_PyTuple(mxobj);
@@ -413,7 +415,9 @@ PRIVATE mxClassID PyArrayType_to_mxClassID(int pytype) {
   case NPY_UINT64: return mxUINT64_CLASS;
   case NPY_FLOAT32: return mxSINGLE_CLASS;
   case NPY_FLOAT64: return mxDOUBLE_CLASS;
-  default: return mxUNKNOWN_CLASS;
+  default: 
+    mexErrMsgIdAndTxt("pymex:badtype","Could not determine appropriate type for %d", pytype);
+    return mxUNKNOWN_CLASS;
   }
 }
 
@@ -473,6 +477,7 @@ PRIVATE PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate) {
 }
 
 PRIVATE mxArray* PyArray_to_mxArray(PyObject* pyobj) {
+  pyobj = PyArray_EnsureArray(pyobj);
   mxClassID class = PyArrayType_to_mxClassID(PyArray_TYPE(pyobj));
   int realnd = PyArray_NDIM(pyobj);
   int nd;
