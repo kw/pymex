@@ -32,7 +32,7 @@ static PyObject* m_eval(PyObject* self, PyObject* args) {
   int retval = mexCallMATLAB(1, &out, 2, evalarray, "evalin");
   mxDestroyArray(evalarray[0]);
   mxDestroyArray(evalarray[1]);
-  // TODO: Throw some sort of error instead.
+  /* TODO: Throw some sort of error instead. */
   if (retval)
     Py_RETURN_NONE;
   else {
@@ -56,6 +56,7 @@ static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
   mxArray *outargs[nargout];
   mexSetTrapFlag(1);
   int retval = mexCallMATLAB(nargout, outargs, nargin, inargs, "feval");
+  /* TODO: Throw some sort of error instead. */
   if (retval)
     Py_RETURN_NONE;
   else {
