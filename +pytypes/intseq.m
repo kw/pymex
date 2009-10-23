@@ -3,7 +3,7 @@
 % give them non-integer inputs. This is annoying, since all MATLAB numbers are
 % double unless you go out of your way to cast them. This class makes things
 % more convenient.
-classdef intseq < pytypes.object
+classdef intseq < pytypes.builtins.object
     methods % Overrides
         function item = getitem(obj, varargin)
             subs = pytypes.intseq.fixkey(varargin{:});

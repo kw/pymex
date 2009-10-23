@@ -5,9 +5,9 @@
 char* PyMX_Marker = "PyMXObject";
 
 mxArray* box_by_type(PyObject* pyobj) {
+  static char mlname[256] = {0};
+  static char* package = "pytypes.%s.%s";
   PYMEX_DEBUG("Trying to box %p\n", pyobj);
-  char* package = "pytypes.%s";
-  char mlname[128] = {0};
   mxArray* box = NULL;
   mxArray* mxname;
   mxArray* which;
@@ -39,10 +39,14 @@ mxArray* box_by_type(PyObject* pyobj) {
       else {
 	PYMEX_DEBUG("Ok, getting name...\n");
       }
+      PyObject* modname = PyObject_GetAttrString(item, "__module__");
+      PyObject* cleanmodname = PyObject_CallMethod(modname, "rstrip", "s", "_");
       PyObject* name = PyObject_GetAttrString(item, "__name__");
-      snprintf(mlname, 128, package, PyString_AsString(name));
+      snprintf(mlname, 256, package, PyString_AsString(cleanmodname), PyString_AsString(name));
       PYMEX_DEBUG("Checking for %s...\n", mlname);
       Py_DECREF(name);
+      Py_DECREF(cleanmodname);
+      Py_DECREF(modname);
       Py_DECREF(item);
       mxname = mxCreateString(mlname);
       mexCallMATLAB(1,&which,1,&mxname,"which");
@@ -56,11 +60,11 @@ mxArray* box_by_type(PyObject* pyobj) {
     Py_DECREF(mro);
     if (ret) { /* none found, use sane default */
       PYMEX_DEBUG("No reasonable box found.\n");
-      ret = mexCallMATLAB(1,&box,0,NULL,"pytypes.object");
+      ret = mexCallMATLAB(1,&box,0,NULL,"pytypes.builtins.object");
     }
   }
   if (ret || !box)
-    mexErrMsgIdAndTxt("pymex:NoBoxes","Unable to find pytypes.object");
+    mexErrMsgIdAndTxt("pymex:NoBoxes","Unable to find pytypes.builtins.object");
   PYMEX_DEBUG("Returning box\n");
   return box;
 }
@@ -119,7 +123,7 @@ bool mxIsPyObject(const mxArray* mxobj) {
   mxArray* boolobj;
   mxArray* args[2];
   args[0] = (mxArray*) mxobj;
-  args[1] = mxCreateString("pytypes.object");
+  args[1] = mxCreateString("pytypes.builtins.object");
   mexCallMATLAB(1,&boolobj,2,args,"isa");
   mxDestroyArray(args[1]);
   return mxIsLogicalScalarTrue(boolobj);
@@ -304,7 +308,7 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
     return mxChar_to_PyString(mxobj);
   }
   else if (mxIsNumeric(mxobj) || mxIsLogical(mxobj)) {
-    return PyArray_Return((PyArrayObject*) mxArray_to_PyArray(mxobj, true));
+    return PYMEX_PYARRAY_RETURN(mxArray_to_PyArray(mxobj, true));
   }
   else if (mxIsCell(mxobj)) {
     return mxCell_to_PyTuple(mxobj);

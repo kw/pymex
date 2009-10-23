@@ -245,10 +245,10 @@ classdef object < pytypes.voidptr
       end
       
       function disp(obj)
-          if pytypes.object.disp_info             
+          if pytypes.builtins.object.disp_info             
               fprintf('%s 0x%s:\n', char(repr(type(obj))), ptrstring(obj));
           end
-          if pytypes.object.disp_repr
+          if pytypes.builtins.object.disp_repr
               s = repr(obj);
           else
               s = str(obj);
@@ -354,14 +354,13 @@ classdef object < pytypes.voidptr
       
       function c = cat(dim, varargin) %#ok<MANU>
           % ignore dim for general object
-          [list tuple] = pybuiltins('list');
-          c = list({});
+          c = py.list();
           for i = 1:numel(varargin)
-              if ~isa(varargin{i}, 'pytypes.object')
+              if ~isa(varargin{i}, 'pytypes.builtins.object')
                   if isnumeric(varargin{i})
-                      varargin{i} = tuple(num2cell(varargin{i}));
+                      varargin{i} = py.tuple(num2cell(varargin{i}));
                   else
-                      varargin{i} = tuple(varargin(i));
+                      varargin{i} = py.tuple(varargin(i));
                   end
               end
               if hasattr(varargin{i}, '__iter__')

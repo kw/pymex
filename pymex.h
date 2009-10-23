@@ -35,7 +35,25 @@
    it also causes vectors to forget their orientation. 
  */
 #ifndef PYMEX_SQUEEZE_SMALL_ARRAYS
-#define PYMEX_SQUEEZE_SMALL_ARRAYS 1
+#define PYMEX_SQUEEZE_SMALL_ARRAYS 0
+#endif
+
+/* PYMEX_SCALARIZE_SCALARS
+   Similarily, we can extract numpy scalars from 0-d arrays when appropriate. 
+   Unfortunately, numpy scalars don't quite have the same semantics as ndarrays,
+   so certain operations (like concatenation) don't work right. Note this only affects
+   0-d arrays, not arrays with 1 element, so if PYMEX_SQUEEZE_SMALL_ARRAYS is false
+   then this won't affect arrays obtained from MATLAB (since they'll be at least 2-d)
+ */
+#ifndef PYMEX_SCALARIZE_SCALARS
+#define PYMEX_SCALARIZE_SCALARS 0
+#endif
+
+// Use this in place of PyArray_Return
+#if PYMEX_SCALARIZE_SCALARS
+#define PYMEX_PYARRAY_RETURN(pyobj) PyArray_Return((PyArrayObject*) pyobj)
+#else
+#define PYMEX_PYARRAY_RETURN(pyobj) pyobj
 #endif
 
 mxArray* box(PyObject* pyobj);
