@@ -17,9 +17,10 @@ elseif nargout == 0
     keys = b.keys();
     values = b.values();
     inds = 0:(double(len(keys))-1);
+    blacklist = {'exit','raw_input','help'};
     for i=int64(inds)
-        name = char(keys{i});
-        if isvarname(name)
+        name = char(keys{i});	
+        if isvarname(name) && ~ismember(name, blacklist)
             assignin('caller', name, values{i});
         end
     end
