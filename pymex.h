@@ -73,9 +73,23 @@ mxArray* PyObject_to_mxLong(PyObject* pyobj);
 PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj);
 mxArray* Any_PyObject_to_mxArray(PyObject* pyobj);
 bool PyMXObj_Check(PyObject* pyobj);
-PyObject* PyCObject_from_mxArray(const mxArray* mxobj);
+PyObject* Py_mxArray_New(const mxArray* mxobj, bool duplicate);
+int Py_mxArray_Check(PyObject* pyobj);
 PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate);
 mxArray* PyArray_to_mxArray(PyObject* pyobj);
-PyMODINIT_FUNC initpymexmodule(void);
+PyMODINIT_FUNC initlibmexmodule(void);
+
+#ifndef LIBMEXMODULE
+extern PyObject* libmexmodule;
+#else
+PyObject* libmexmodule;
+#endif
+
+#define mxArrayPtr(pyobj) ((mxArray*) ((mxArrayObject*)pyobj)->mxptr)
+
+typedef struct {
+    PyObject_HEAD
+    mxArray* mxptr;
+} mxArrayObject;
 
 #endif

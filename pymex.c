@@ -59,7 +59,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (!Py_IsInitialized()) {
     Py_Initialize();
     PYMEX_DEBUG("[python: initialized]\n");
-    initpymexmodule();
+    initlibmexmodule();
     mexAtExit(ExitFcn);
     /* FIXME
        To temporarily deal with the reloading problem,

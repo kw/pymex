@@ -1,10 +1,11 @@
 #include <Python.h>
+#include "structmember.h"
 #define PY_ARRAY_UNIQUE_SYMBOL PYMEX_ARRAY_API
 #define NPY_USE_PYMEM 1
 #include <numpy/arrayobject.h>
+#define LIBMEXMODULE
 #include "pymex.h"
 #include <mex.h>
-
 
 static PyObject* m_printf(PyObject* self, PyObject* args) {
   PyObject* format = PySequence_GetItem(args, 0);
@@ -67,17 +68,103 @@ static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
   }
 }
 
-static PyMethodDef PymexMethods[] = {
+static PyMethodDef libmex_methods[] = {
   {"printf", m_printf, METH_VARARGS, "Print a string using mexPrintf"},
   {"eval", m_eval, METH_VARARGS, "Evaluates a string using mexEvalString"},
   {"call", (PyCFunction)m_call, METH_VARARGS | METH_KEYWORDS, "feval the inputs"},
   {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC
-initpymexmodule(void)
+/* libmx mxArray type */
+
+static void 
+mxArray_dealloc(mxArrayObject* self)
 {
-  PyObject* m = Py_InitModule("libmex", PymexMethods);
-  if (m == NULL) return;
+  mxArray* ptr = mxArrayPtr(self);
+  if (ptr) mxDestroyArray(ptr);
+  self->ob_type->tp_free((PyObject*) self);
+}
+
+static PyObject*
+mxArray_mxclass_id(mxArrayObject* self)
+{
+  mxClassID id = mxGetClassID(mxArrayPtr(self));
+  return PyInt_FromLong((long) id);
+}
+
+static PyObject*
+mxArray_mxclass(mxArrayObject* self)
+{
+  const char* class = mxGetClassName(mxArrayPtr(self));
+  return PyString_FromString(class);
+}
+
+static PyMethodDef mxArray_methods[] = {
+  {"mxGetClassID", (PyCFunction)mxArray_mxclass_id, METH_NOARGS,
+   "Returns the ClassId of the mxArray"},
+  {"mxGetClassName", (PyCFunction)mxArray_mxclass, METH_NOARGS,
+   "Returns the name of the class of the mxArray"},
+  {NULL}
+};
+
+static PyTypeObject mxArrayType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "libmex.mxArray",          /*tp_name*/
+    sizeof(mxArrayObject),    /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)mxArray_dealloc,    /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /*tp_flags*/
+    "mxArray objects",           /* tp_doc */
+    0,		               /* tp_traverse */
+    0,		               /* tp_clear */
+    0,		               /* tp_richcompare */
+    0,		               /* tp_weaklistoffset */
+    0,		               /* tp_iter */
+    0,		               /* tp_iternext */
+    mxArray_methods,             /* tp_methods */
+    0,                        /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    0,                         /* tp_init */
+    0,                         /* tp_alloc */
+    0,                        /* tp_new */
+};
+
+
+
+#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
+#define PyMODINIT_FUNC void
+#endif
+PyMODINIT_FUNC
+initlibmexmodule(void)
+{
+  mxArrayType.tp_new = PyType_GenericNew;
+  if (PyType_Ready(&mxArrayType) < 0) return;
+
+  libmexmodule = Py_InitModule("libmex", libmex_methods);
+
+  Py_INCREF(&mxArrayType);
+  PyModule_AddObject(libmexmodule, "mxArray", (PyObject*) &mxArrayType);
+
+  /* numpy C-API import */
   import_array();
 }

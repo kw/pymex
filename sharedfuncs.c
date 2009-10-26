@@ -2,7 +2,7 @@
 #include <mex.h>
 
 
-char* PyMX_Marker = "PyMXObject";
+
 
 mxArray* box_by_type(PyObject* pyobj) {
   static char mlname[256] = {0};
@@ -314,7 +314,7 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
     return mxCell_to_PyTuple(mxobj);
   }
   else {
-    return PyCObject_from_mxArray(mxobj);
+    return Py_mxArray_New(mxobj,1);
   }
 }
 
@@ -332,8 +332,8 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return PyObject_to_mxLong(pyobj);
   else if (PyFloat_Check(pyobj))
     return PyObject_to_mxDouble(pyobj);
-  else if (PyMXObj_Check(pyobj))
-    return (mxArray*) PyCObject_AsVoidPtr(pyobj);
+  else if (Py_mxArray_Check(pyobj))
+    return mxArrayPtr(pyobj);
   else if (PyArray_HasArrayInterface(pyobj, array))
     return box(array);
   else if (PySequence_Check(pyobj))
@@ -342,18 +342,25 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return boxb(pyobj);
 }
 
-bool PyMXObj_Check(PyObject* pyobj) {
-  return PyCObject_Check(pyobj) && (PyCObject_GetDesc(pyobj) == (void*) PyMX_Marker);
+PyObject* Py_mxArray_New(const mxArray* mxobj, bool duplicate) {
+  mxArray* copy;
+  if (duplicate) {
+    copy = mxDuplicateArray(mxobj);
+    mexMakeArrayPersistent(copy);
+  }
+  else {
+    copy = (mxArray*) mxobj;
+  }
+  if (!libmexmodule)
+    mexErrMsgTxt("Uh oh, no libmexmodule?");
+  /* TODO: There is probably a better way to do this... */
+  mxArrayObject* newptr = (mxArrayObject*) PyObject_CallMethod(libmexmodule, "mxArray", NULL);
+  newptr->mxptr = copy;
+  return (PyObject*) newptr;
 }
 
-void PyMXDestructor(void* mxobj, void* desc) {
-  mxDestroyArray((mxArray*) mxobj);
-}
-
-PyObject* PyCObject_from_mxArray(const mxArray* mxobj) {
-  mxArray* copy = mxDuplicateArray(mxobj);
-  mexMakeArrayPersistent(copy);
-  return PyCObject_FromVoidPtrAndDesc((void*) copy, (void*) PyMX_Marker, PyMXDestructor);
+int Py_mxArray_Check(PyObject* pyobj) {
+  return PyObject_IsInstance(pyobj, PyObject_GetAttrString(libmexmodule, "mxArray"));
 }
 
 int mxClassID_to_PyArrayType(mxClassID mxclass) {
@@ -398,8 +405,8 @@ PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate) {
   PyObject* base = NULL;
   mxArray* ptr = (mxArray*) mxobj;
   if (duplicate) {
-    base = PyCObject_from_mxArray(mxobj);
-    ptr = PyCObject_AsVoidPtr(base);
+    base = Py_mxArray_New(mxobj,1);
+    ptr = mxArrayPtr(base);
   }
   void* data = mxGetData(ptr);
   int realnd = (int) mxGetNumberOfDimensions(ptr);

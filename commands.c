@@ -235,9 +235,6 @@ PYMEX(RUN_SIMPLE_STRING, 1, 1, {
     plhs[0] = mxCreateDoubleScalar((double) ret);
   })
 
-PYMEX(AS_PYCOBJECT, 1, 1, {
-    plhs[0] = box(PyCObject_from_mxArray(prhs[0]));
-  })
 
 /*		  
 PYMEX(TO_NDARRAY, 1, 1, {
