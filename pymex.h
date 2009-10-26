@@ -49,7 +49,7 @@
 #define PYMEX_SCALARIZE_SCALARS 0
 #endif
 
-// Use this in place of PyArray_Return
+/* Use this in place of PyArray_Return */
 #if PYMEX_SCALARIZE_SCALARS
 #define PYMEX_PYARRAY_RETURN(pyobj) PyArray_Return((PyArrayObject*) pyobj)
 #else
