@@ -87,24 +87,58 @@ mxArray_dealloc(mxArrayObject* self)
 }
 
 static PyObject*
-mxArray_mxclass_id(mxArrayObject* self)
+mxArray_mxGetClassID(mxArrayObject* self)
 {
   mxClassID id = mxGetClassID(mxArrayPtr(self));
   return PyInt_FromLong((long) id);
 }
 
 static PyObject*
-mxArray_mxclass(mxArrayObject* self)
+mxArray_mxGetClassName(mxArrayObject* self)
 {
   const char* class = mxGetClassName(mxArrayPtr(self));
   return PyString_FromString(class);
 }
 
+/* TODO: Add keyword option to index from 1 instead of 0 */
+static PyObject*
+mxArray_mxCalcSingleSubscript(mxArrayObject* self, PyObject* args)
+{
+  mxArray* mxobj = mxArrayPtr(self);
+  mwSize len = (mwIndex) PySequence_Length(args);
+  mwSize dims = mxGetNumberOfDimensions(mxobj);
+  if (len > dims) /* TODO: throw error instead */
+    return PyInt_FromLong(0L);
+  mwIndex subs[len];
+  mwIndex i;
+  for (i=0; i<len; i++)
+    subs[i] = (mwIndex) PyInt_AsLong(PyTuple_GetItem(args, (Py_ssize_t) i));
+  return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
+}
+
+/* TODO: Allow multiple subscript indexing */
+static PyObject*
+mxArray_mxGetField(mxArrayObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"index"};
+  char* fieldname;
+  long index = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
+				   kwlist, &fieldname, &index))
+    return NULL;
+  mxArray* item = mxGetField(mxArrayPtr(self), (mwIndex) index, fieldname);
+  return Any_mxArray_to_PyObject(item);
+}
+
 static PyMethodDef mxArray_methods[] = {
-  {"mxGetClassID", (PyCFunction)mxArray_mxclass_id, METH_NOARGS,
+  {"mxGetClassID", (PyCFunction)mxArray_mxGetClassID, METH_NOARGS,
    "Returns the ClassId of the mxArray"},
-  {"mxGetClassName", (PyCFunction)mxArray_mxclass, METH_NOARGS,
+  {"mxGetClassName", (PyCFunction)mxArray_mxGetClassName, METH_NOARGS,
    "Returns the name of the class of the mxArray"},
+  {"mxCalcSingleSubscript", (PyCFunction)mxArray_mxCalcSingleSubscript, METH_VARARGS,
+   "Calculates the linear index for the given subscripts"},
+  {"mxGetField", (PyCFunction)mxArray_mxGetField, METH_VARARGS | METH_KEYWORDS,
+   "Retrieve a field of a struct, optionally at a particular index."},
   {NULL}
 };
 
