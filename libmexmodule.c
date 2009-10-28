@@ -79,7 +79,7 @@ static PyMethodDef libmex_methods[] = {
 /* libmx mxArray type */
 
 static void 
-mxArray_dealloc(mxArrayObject* self)
+mxArray_dealloc(PyObject* self)
 {
   mxArray* ptr = mxArrayPtr(self);
   if (ptr) mxDestroyArray(ptr);
@@ -87,14 +87,14 @@ mxArray_dealloc(mxArrayObject* self)
 }
 
 static PyObject*
-mxArray_mxGetClassID(mxArrayObject* self)
+mxArray_mxGetClassID(PyObject* self)
 {
   mxClassID id = mxGetClassID(mxArrayPtr(self));
   return PyInt_FromLong((long) id);
 }
 
 static PyObject*
-mxArray_mxGetClassName(mxArrayObject* self)
+mxArray_mxGetClassName(PyObject* self)
 {
   const char* class = mxGetClassName(mxArrayPtr(self));
   return PyString_FromString(class);
@@ -102,13 +102,15 @@ mxArray_mxGetClassName(mxArrayObject* self)
 
 /* TODO: Add keyword option to index from 1 instead of 0 */
 static PyObject*
-mxArray_mxCalcSingleSubscript(mxArrayObject* self, PyObject* args)
+mxArray_mxCalcSingleSubscript(PyObject* self, PyObject* args)
 {
   mxArray* mxobj = mxArrayPtr(self);
   mwSize len = (mwIndex) PySequence_Length(args);
   mwSize dims = mxGetNumberOfDimensions(mxobj);
-  if (len > dims) /* TODO: throw error instead */
-    return PyInt_FromLong(0L);
+  if (len > dims) {
+    return PyErr_Format(PyExc_IndexError, "Can't calculated %ld-dimensional subscripts for %ld-dimensional array",
+			(long) len, (long) dims);
+  }
   mwIndex subs[len];
   mwIndex i;
   for (i=0; i<len; i++)
@@ -118,16 +120,90 @@ mxArray_mxCalcSingleSubscript(mxArrayObject* self, PyObject* args)
 
 /* TODO: Allow multiple subscript indexing */
 static PyObject*
-mxArray_mxGetField(mxArrayObject* self, PyObject* args, PyObject* kwargs)
+mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"index"};
+  static char* kwlist[] = {"fieldname","index", NULL};
+  if (!mxIsStruct(mxArrayPtr(self))) {
+    return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(mxArrayPtr(self)));
+  }
   char* fieldname;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
 				   kwlist, &fieldname, &index))
     return NULL;
+  if (index >= mxGetNumberOfElements(mxArrayPtr(self)) || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", 
+			index, (long) mxGetNumberOfElements(mxArrayPtr(self)));
+  if (mxGetFieldNumber(mxArrayPtr(self), fieldname) < 0)
+    return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field.", fieldname);
   mxArray* item = mxGetField(mxArrayPtr(self), (mwIndex) index, fieldname);
   return Any_mxArray_to_PyObject(item);
+}
+
+/* helper function, initializes a new field of a struct. */
+static int mxAddField_AndInit(mxArray* obj, const char* fieldname, mxArray* fillval) {
+  if (!fillval) fillval = mxCreateDoubleMatrix(0,0,mxREAL);
+  mwSize len = mxGetNumberOfElements(obj);
+  mwIndex i;
+  int fieldnum = mxAddField(obj, fieldname);
+  if (fieldnum < 0) return fieldnum;
+  for (i=0; i<len; i++) {
+    mxArray* nextval = mxDuplicateArray(fillval);
+    mexMakeArrayPersistent(nextval); /* FIXME: Use this line only if linking with libmex */
+    mxSetFieldByNumber(obj, i, fieldnum, nextval);
+  }
+  return fieldnum;
+}
+
+/* TODO: Struct resizing */
+/* TODO: Allow multiple subscript indexing */
+static PyObject*
+mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"fieldname", "value", "index", NULL};
+  if (!mxIsStruct(mxArrayPtr(self))) {
+    return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(mxArrayPtr(self)));
+  }
+  char* fieldname;
+  PyObject* newvalue;
+  long index = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
+				   kwlist, &fieldname, &newvalue, &index))
+    return NULL;
+  if (index >= mxGetNumberOfElements(mxArrayPtr(self)) || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", 
+			index, (long) mxGetNumberOfElements(mxArrayPtr(self)));
+  if (mxGetFieldNumber(mxArrayPtr(self), fieldname) < 0)
+    if (mxAddField_AndInit(mxArrayPtr(self), fieldname, NULL) < 0)
+      return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field, and could not create it.", fieldname);
+  mxArray* mxvalue = Any_PyObject_to_mxArray(newvalue);
+  mxArray* oldval = mxGetField(mxArrayPtr(self), (mwIndex) index, fieldname);
+  if (oldval) mxDestroyArray(oldval);
+  mxSetField(mxArrayPtr(self), (mwIndex) index, fieldname, mxvalue);
+  Py_RETURN_NONE;
+}
+
+
+
+static PyObject*
+mxArray_mxGetNumberOfElements(PyObject* self)
+{
+  mwSize len = mxGetNumberOfElements(mxArrayPtr(self));
+  return PyLong_FromLong(len);
+}
+
+static PyObject*
+mxArray_mxGetNumberOfDimensions(PyObject* self)
+{
+  mwSize ndims = mxGetNumberOfDimensions(mxArrayPtr(self));
+  return PyLong_FromLong(ndims);
+}
+
+static PyObject*
+mxArray_mxGetElementSize(PyObject* self)
+{
+  size_t sz = mxGetElementSize(mxArrayPtr(self));
+  return PyLong_FromSize_t(sz);
 }
 
 static PyMethodDef mxArray_methods[] = {
@@ -139,6 +215,14 @@ static PyMethodDef mxArray_methods[] = {
    "Calculates the linear index for the given subscripts"},
   {"mxGetField", (PyCFunction)mxArray_mxGetField, METH_VARARGS | METH_KEYWORDS,
    "Retrieve a field of a struct, optionally at a particular index."},
+  {"mxSetField", (PyCFunction)mxArray_mxSetField, METH_VARARGS | METH_KEYWORDS,
+   "Set a field of a struct, optionally at a particular index."},
+  {"mxGetNumberOfElements", (PyCFunction)mxArray_mxGetNumberOfElements, METH_NOARGS,
+   "Returns the number of elements in the array."},
+  {"mxGetNumberOfDimensions", (PyCFunction)mxArray_mxGetNumberOfDimensions, METH_NOARGS,
+   "Returns the number of dimensions of the array."},
+  {"mxGetElementSize", (PyCFunction)mxArray_mxGetElementSize, METH_NOARGS,
+   "Returns the size of each element in the array, in bytes."},
   {NULL}
 };
 
