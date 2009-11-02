@@ -3,15 +3,15 @@
 % give them non-integer inputs. This is annoying, since all MATLAB numbers are
 % double unless you go out of your way to cast them. This class makes things
 % more convenient.
-classdef intseq < pytypes.builtins.object
+classdef intseq < pytypes.builtin.object
     methods % Overrides
         function item = getitem(obj, varargin)
             subs = pytypes.intseq.fixkey(varargin{:});
-            item = getitem@pytypes.object(obj, subs{:});
+            item = getitem@pytypes.builtin.object(obj, subs{:});
         end
         function setitem(obj, val, varargin)
             subs = pytypes.intseq.fixkey(varargin{:});
-            setitem@pytypes.object(obj, val, subs{:});
+            setitem@pytypes.builtin.object(obj, val, subs{:});
         end
     end
     

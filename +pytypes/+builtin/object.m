@@ -245,10 +245,10 @@ classdef object < pytypes.voidptr
       end
       
       function disp(obj)
-          if pytypes.builtins.object.disp_info             
+          if pytypes.builtin.object.disp_info             
               fprintf('%s 0x%s:\n', char(repr(type(obj))), ptrstring(obj));
           end
-          if pytypes.builtins.object.disp_repr
+          if pytypes.builtin.object.disp_repr
               s = repr(obj);
           else
               s = str(obj);
@@ -356,7 +356,7 @@ classdef object < pytypes.voidptr
           % ignore dim for general object
           c = py.list();
           for i = 1:numel(varargin)
-              if ~isa(varargin{i}, 'pytypes.builtins.object')
+              if ~isa(varargin{i}, 'pytypes.builtin.object')
                   if isnumeric(varargin{i})
                       varargin{i} = py.tuple(num2cell(varargin{i}));
                   else
