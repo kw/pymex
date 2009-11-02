@@ -123,20 +123,36 @@ static PyObject*
 mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   static char* kwlist[] = {"fieldname","index", NULL};
-  if (!mxIsStruct(mxArrayPtr(self))) {
-    return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(mxArrayPtr(self)));
-  }
+  const mxArray* ptr = mxArrayPtr(self);
+  if (!mxIsStruct(ptr))
+    return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
   char* fieldname;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
 				   kwlist, &fieldname, &index))
     return NULL;
-  if (index >= mxGetNumberOfElements(mxArrayPtr(self)) || index < 0)
-    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", 
-			index, (long) mxGetNumberOfElements(mxArrayPtr(self)));
+  const mwSize numel = mxGetNumberOfElements(ptr);
+  if (index >= numel || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
   if (mxGetFieldNumber(mxArrayPtr(self), fieldname) < 0)
     return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field.", fieldname);
-  mxArray* item = mxGetField(mxArrayPtr(self), (mwIndex) index, fieldname);
+  mxArray* item = mxGetField(ptr, (mwIndex) index, fieldname);
+  return Any_mxArray_to_PyObject(item);
+}
+
+static PyObject*
+mxArray_mxGetCell(PyObject* self, PyObject* args)
+{
+  long index = 0;
+  const mxArray* ptr = mxArrayPtr(self);
+  if (!mxIsCell(ptr))
+    return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
+  if (!PyArg_ParseTuple(args, "l", &index))
+    return NULL;
+  const mwSize numel = mxGetNumberOfElements(ptr);
+  if (index >= numel || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
+  mxArray* item = mxGetCell(ptr, (mwIndex) index);
   return Any_mxArray_to_PyObject(item);
 }
 
@@ -161,29 +177,49 @@ static PyObject*
 mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   static char* kwlist[] = {"fieldname", "value", "index", NULL};
-  if (!mxIsStruct(mxArrayPtr(self))) {
-    return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(mxArrayPtr(self)));
-  }
+  const mxArray* ptr = mxArrayPtr(self);
+  if (!mxIsStruct(ptr))
+    return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
   char* fieldname;
   PyObject* newvalue;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
 				   kwlist, &fieldname, &newvalue, &index))
     return NULL;
-  if (index >= mxGetNumberOfElements(mxArrayPtr(self)) || index < 0)
-    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", 
-			index, (long) mxGetNumberOfElements(mxArrayPtr(self)));
-  if (mxGetFieldNumber(mxArrayPtr(self), fieldname) < 0)
-    if (mxAddField_AndInit(mxArrayPtr(self), fieldname, NULL) < 0)
+  const mwSize numel = mxGetNumberOfElements(ptr);
+  if (index >= numel || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
+  if (mxGetFieldNumber(ptr, fieldname) < 0)
+    if (mxAddField_AndInit((mxArray*) ptr, fieldname, NULL) < 0)
       return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field, and could not create it.", fieldname);
-  mxArray* mxvalue = Any_PyObject_to_mxArray(newvalue);
-  mxArray* oldval = mxGetField(mxArrayPtr(self), (mwIndex) index, fieldname);
+  mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue)); /*FIXME: This probably leaks when the input isn't already an mxArray, since the returned object is new but never freed */
+  mexMakeArrayPersistent(mxvalue);
+  mxArray* oldval = mxGetField(ptr, (mwIndex) index, fieldname);
   if (oldval) mxDestroyArray(oldval);
-  mxSetField(mxArrayPtr(self), (mwIndex) index, fieldname, mxvalue);
+  mxSetField((mxArray*) ptr, (mwIndex) index, fieldname, mxvalue);
   Py_RETURN_NONE;
 }
 
-
+static PyObject*
+mxArray_mxSetCell(PyObject* self, PyObject* args)
+{
+  const mxArray* ptr = mxArrayPtr(self);
+  if (!mxIsCell(ptr))
+    return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
+  PyObject* newvalue;
+  long index = 0;
+  if (!PyArg_ParseTuple(args, "lO", &index, &newvalue))
+    return NULL;
+  const mwSize numel = mxGetNumberOfElements(ptr);
+  if (index >= numel || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
+  mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue));
+  mexMakeArrayPersistent(mxvalue);
+  mxArray* oldval = mxGetCell(ptr, (mwIndex) index);
+  if (oldval) mxDestroyArray(oldval);
+  mxSetCell((mxArray*) ptr, (mwIndex) index, mxvalue);
+  Py_RETURN_NONE;
+}
 
 static PyObject*
 mxArray_mxGetNumberOfElements(PyObject* self)
@@ -228,8 +264,12 @@ static PyMethodDef mxArray_methods[] = {
    "Calculates the linear index for the given subscripts"},
   {"mxGetField", (PyCFunction)mxArray_mxGetField, METH_VARARGS | METH_KEYWORDS,
    "Retrieve a field of a struct, optionally at a particular index."},
+  {"mxGetCell", (PyCFunction)mxArray_mxGetCell, METH_VARARGS,
+   "Retrieve a cell array element"},
   {"mxSetField", (PyCFunction)mxArray_mxSetField, METH_VARARGS | METH_KEYWORDS,
    "Set a field of a struct, optionally at a particular index."},
+  {"mxSetCell", (PyCFunction)mxArray_mxSetCell, METH_VARARGS,
+   "Set a cell array element"},
   {"mxGetNumberOfElements", (PyCFunction)mxArray_mxGetNumberOfElements, METH_NOARGS,
    "Returns the number of elements in the array."},
   {"mxGetNumberOfDimensions", (PyCFunction)mxArray_mxGetNumberOfDimensions, METH_NOARGS,

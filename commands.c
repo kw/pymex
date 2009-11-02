@@ -235,14 +235,6 @@ PYMEX(RUN_SIMPLE_STRING, 1, 1, {
     plhs[0] = mxCreateDoubleScalar((double) ret);
   })
 
-
-/*		  
-PYMEX(TO_NDARRAY, 1, 1, {
-    plhs[0] = box(mxArray_to_PyArray(prhs[0], true));
+PYMEX(PYBOX, 1, 1, {
+    plhs[0] = box(Py_mxArray_New(prhs[0], 1));
   })
-
-PYMEX(FROM_NDARRAY, 1, 1, {
-    plhs[0] = PyArray_to_mxArray(unbox(prhs[0]));
-  })
-*/
-    

@@ -69,7 +69,7 @@ mxArray* box_by_type(PyObject* pyobj) {
   return box;
 }
 
-               
+/* boxes the object, stealing the reference */
 mxArray* box (PyObject* pyobj) {
   mxArray* boxed = NULL;
   if (!pyobj) {
@@ -86,11 +86,13 @@ mxArray* box (PyObject* pyobj) {
   return boxed;
 }
 
+/* Box a borrowed reference (increfs it first) */
 mxArray* boxb (PyObject* pyobj) {
   Py_XINCREF(pyobj);
   return box(pyobj);
 }
 
+/* Unboxes an object, returning a borrowed reference */
 PyObject* unbox (const mxArray* mxobj) {  
   if (mxIsPyNull(mxobj)) {
     PYMEX_DEBUG("Attempt to unbox null object.");
@@ -102,6 +104,7 @@ PyObject* unbox (const mxArray* mxobj) {
   }
 }
 
+/* Unboxes an object, returning a new reference */
 PyObject* unboxn (const mxArray* mxobj) {
   PyObject* pyobj;
   if (mxIsPyObject(mxobj)) {
