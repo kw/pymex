@@ -200,6 +200,19 @@ mxArray_mxGetNumberOfDimensions(PyObject* self)
 }
 
 static PyObject*
+mxArray_mxGetDimensions(PyObject* self)
+{
+  mwSize ndims = mxGetNumberOfDimensions(mxArrayPtr(self));
+  PyObject* dimtuple = PyTuple_New(ndims);
+  const mwSize* dimarray = mxGetDimensions(mxArrayPtr(self));
+  Py_ssize_t i;
+  for (i=0; i<ndims; i++) {
+    PyTuple_SetItem(dimtuple, i, PyInt_FromSsize_t((Py_ssize_t) dimarray[i]));
+  }
+  return dimtuple;
+}
+
+static PyObject*
 mxArray_mxGetElementSize(PyObject* self)
 {
   size_t sz = mxGetElementSize(mxArrayPtr(self));
@@ -221,6 +234,8 @@ static PyMethodDef mxArray_methods[] = {
    "Returns the number of elements in the array."},
   {"mxGetNumberOfDimensions", (PyCFunction)mxArray_mxGetNumberOfDimensions, METH_NOARGS,
    "Returns the number of dimensions of the array."},
+  {"mxGetDimensions", (PyCFunction)mxArray_mxGetDimensions, METH_NOARGS,
+   "Returns a tuple containing the sizes of each dimension"},
   {"mxGetElementSize", (PyCFunction)mxArray_mxGetElementSize, METH_NOARGS,
    "Returns the size of each element in the array, in bytes."},
   {NULL}
