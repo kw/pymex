@@ -68,7 +68,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
        you'd like, of course. Good luck with that. */
     mexLock();
   }
-
+  mexSetTrapFlag(1);
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
     if (nlhs == 1) {
       plhs[0] = mxCreateCellMatrix(1,NUMBER_OF_PYMEX_COMMANDS);

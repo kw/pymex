@@ -6,6 +6,7 @@
 #define LIBMEXMODULE
 #include "pymex.h"
 #include <mex.h>
+#include <signal.h>
 
 static PyObject* m_printf(PyObject* self, PyObject* args) {
   PyObject* format = PySequence_GetItem(args, 0);
@@ -43,7 +44,7 @@ static PyObject* m_eval(PyObject* self, PyObject* args) {
 
 static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
   static char *kwlist[] = {"nargout",NULL};
-  int nargout = 1;
+  int nargout = -1;
   PyObject* fakeargs = PyTuple_New(0);
   if (!PyArg_ParseTupleAndKeywords(fakeargs, kwargs, "|i", kwlist, &nargout))
     return NULL;
@@ -54,18 +55,23 @@ static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
   for (i=0; i<nargin; i++) {
     inargs[i] = Any_PyObject_to_mxArray(PyTuple_GetItem(args, i));
   }
+  int tupleout = nargout >= 0;
+  if (nargout < 0) nargout = 1;
   mxArray *outargs[nargout];
   mexSetTrapFlag(1);
   int retval = mexCallMATLAB(nargout, outargs, nargin, inargs, "feval");
-  /* TODO: Throw some sort of error instead. */
   if (retval)
-    Py_RETURN_NONE;
+    return PyErr_Format(PyExc_RuntimeError, "I have no idea what happened");
   else {
-    PyObject* outseq = PyTuple_New(nargout);
-    for (i=0; i<nargout; i++) {
-      PyTuple_SetItem(outseq, i, Any_mxArray_to_PyObject(outargs[i]));
+    if (tupleout) {
+      PyObject* outseq = PyTuple_New(nargout);
+      for (i=0; i<nargout; i++) {
+	PyTuple_SetItem(outseq, i, Any_mxArray_to_PyObject(outargs[i]));
+      }
+      return outseq;
     }
-    return outseq;
+    else
+      return Any_mxArray_to_PyObject(outargs[0]);
   }
 }
 
@@ -140,6 +146,38 @@ mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
   return Any_mxArray_to_PyObject(item);
 }
 
+void test_handler(int signum) 
+{
+  mexPrintf("got signal %d\n", signum);
+}
+
+/* FIXME: mxGetProperty and mxSetProperty cause SIGABRT if there's some sort of error,
+   but there doesn't seem to be any way to catch the signal because the MATLAB interpreter
+   either changes my signal handler or there's a different handler for that thread or something. 
+   This happens if you try to access a nonexistent property (there is no C-API function to determine
+   valid properties), if you try to access a property but have insufficient rights (also no way of
+   checking that from C), or if an error occurs in the property's accessor function.
+   Should probably use subsref/subsasgn instead. 
+*/
+static PyObject*
+mxArray_mxGetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"propname","index", NULL};
+  const mxArray* ptr = mxArrayPtr(self);
+  char* propname;
+  long index = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
+				   kwlist, &propname, &index))
+    return NULL;
+  const mwSize numel = mxGetNumberOfElements(ptr);
+  if (index >= numel || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
+  mxArray* item = mxGetProperty(ptr, (mwIndex) index, propname);
+  if (!item)
+    return PyErr_Format(PyExc_KeyError, "Lookup of property '%s' failed.", propname);
+  return Any_mxArray_to_PyObject(item);
+}
+
 static PyObject*
 mxArray_mxGetCell(PyObject* self, PyObject* args)
 {
@@ -200,6 +238,26 @@ mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
   Py_RETURN_NONE;
 }
 
+/* FIXME: See discussion at mxGetProperty */
+static PyObject*
+mxArray_mxSetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"propname", "value", "index", NULL};
+  const mxArray* ptr = mxArrayPtr(self);
+  char* propname;
+  PyObject* newvalue;
+  long index = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
+				   kwlist, &propname, &newvalue, &index))
+    return NULL;
+  const mwSize numel = mxGetNumberOfElements(ptr);
+  if (index >= numel || index < 0)
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
+  mxArray* mxvalue = Any_PyObject_to_mxArray(newvalue);
+  mxSetProperty((mxArray*) ptr, (mwIndex) index, propname, mxvalue);
+  Py_RETURN_NONE;
+}
+
 static PyObject*
 mxArray_mxSetCell(PyObject* self, PyObject* args)
 {
@@ -219,6 +277,23 @@ mxArray_mxSetCell(PyObject* self, PyObject* args)
   if (oldval) mxDestroyArray(oldval);
   mxSetCell((mxArray*) ptr, (mwIndex) index, mxvalue);
   Py_RETURN_NONE;
+}
+
+static PyObject*
+mxArray_mxGetFields(PyObject* self)
+{
+  mxArray* ptr = mxArrayPtr(self);
+  int nfields = mxGetNumberOfFields(ptr);
+  PyObject* outtuple = PyTuple_New(nfields);
+  int i;
+  for (i=0; i<nfields; i++) {
+    const char* fieldname = mxGetFieldNameByNumber(ptr, i);
+    if (!fieldname)
+      return PyErr_Format(PyExc_RuntimeError, "Unable to read field %d from struct.", i);
+    PyObject* pyname = PyString_FromString(fieldname);
+    PyTuple_SetItem(outtuple, i, pyname);
+  }
+  return outtuple;
 }
 
 static PyObject*
@@ -264,12 +339,18 @@ static PyMethodDef mxArray_methods[] = {
    "Calculates the linear index for the given subscripts"},
   {"mxGetField", (PyCFunction)mxArray_mxGetField, METH_VARARGS | METH_KEYWORDS,
    "Retrieve a field of a struct, optionally at a particular index."},
+  {"mxGetProperty", (PyCFunction)mxArray_mxGetProperty, METH_VARARGS | METH_KEYWORDS,
+   "Retrieve a property of a object, optionally at a particular index."},
   {"mxGetCell", (PyCFunction)mxArray_mxGetCell, METH_VARARGS,
    "Retrieve a cell array element"},
   {"mxSetField", (PyCFunction)mxArray_mxSetField, METH_VARARGS | METH_KEYWORDS,
    "Set a field of a struct, optionally at a particular index."},
+  {"mxSetProperty", (PyCFunction)mxArray_mxSetProperty, METH_VARARGS | METH_KEYWORDS,
+   "Set a property of an object, optionally at a particular index."},
   {"mxSetCell", (PyCFunction)mxArray_mxSetCell, METH_VARARGS,
    "Set a cell array element"},
+  {"mxGetFields", (PyCFunction)mxArray_mxGetFields, METH_NOARGS,
+   "Returns a tuple with the field names of the struct."},
   {"mxGetNumberOfElements", (PyCFunction)mxArray_mxGetNumberOfElements, METH_NOARGS,
    "Returns the number of elements in the array."},
   {"mxGetNumberOfDimensions", (PyCFunction)mxArray_mxGetNumberOfDimensions, METH_NOARGS,
