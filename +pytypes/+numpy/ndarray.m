@@ -1,3 +1,6 @@
+% FIXME: intseq has been changed so that it has the semantics of a "normal" sequence like
+% a list or int and does not support multidimensional indexing, sequence indexing, logical
+% indexing, etc. Move that functionality into ndarray or some other appropriate abstract base.
 classdef ndarray < pytypes.intseq
     methods
         function s = size(obj, dim)

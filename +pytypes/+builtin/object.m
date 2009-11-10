@@ -260,6 +260,10 @@ classdef object < pytypes.voidptr
           n = 1;
       end
       
+      function s = length(obj)
+          s = max(size(obj));
+      end
+      
       function s = size(obj, varargin)          
           if hasattr(obj,'__len__')
               s = [1 double(len(obj))];
@@ -375,7 +379,7 @@ classdef object < pytypes.voidptr
           if k > 1
               warning('pymex:end','End of dimension %d requested, but generic objects don''t have that many.',k);
           end
-          e = len(obj)-1;
+          e = length(obj)-1;
       end
   end
   

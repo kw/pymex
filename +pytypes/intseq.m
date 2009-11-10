@@ -5,35 +5,38 @@
 % more convenient.
 classdef intseq < pytypes.builtin.object
     methods % Overrides
-        function item = getitem(obj, varargin)
+        function item = getitem(obj, varargin)                
             subs = pytypes.intseq.fixkey(varargin{:});
-            item = getitem@pytypes.builtin.object(obj, subs{:});
+            item = getitem@pytypes.builtin.object(obj, subs);
         end
         function setitem(obj, val, varargin)
             subs = pytypes.intseq.fixkey(varargin{:});
-            setitem@pytypes.builtin.object(obj, val, subs{:});
+            setitem@pytypes.builtin.object(obj, val, subs);
         end
     end
     
     methods (Static)
         function subs = fixkey(varargin)
-            subs = cell(size(varargin));            
-            for i=1:numel(varargin)
-                key = varargin{i};
-                if isempty(key)
-                    %ignore
-                elseif isnumeric(key)
-                    key = py.int(key);                    
-                elseif islogical(key)
-                    key = py.bool(key);
-                elseif iscell(key)
-                    key = pytypes.intseq.fixkey(key{:});
-                    key = py.slice(key{:});
-                elseif ~isa(key,'pytypes.object')
-                    error('IntegerIndexedSequence:BadKey','Don''t know what to do with key of type %s', class(key));
+            if numel(varargin) ~= 1
+                error('intseq:KeyError', 'Must index on exactly one dimensions for this type of object.');
+            end
+            subs = varargin{1};
+            if isnumeric(subs)
+                if numel(subs) ~= 1
+                    error('intseq:KeyError', ['This type does not support indexing over a sequence. ' ...
+                        'You can use {a,b,c} as a shortcut for py.slice(a,b,c).']);
+                else
+                    return;
                 end
-                subs{i} = key;
+            elseif iscell(subs)
+                % either slice or the python object will complain if this is wrong
+                subs = py.slice(subs{:});
+            elseif isa(subs, 'pytypes.builtins.object')
+                % let python determine if it's convertible to an index
+                return
+            else
+                error('intseq:KeyError', 'Don''t know how to index using a %s', class(subs))
             end            
-        end
+        end        
     end
 end
