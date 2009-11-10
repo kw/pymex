@@ -1,8 +1,10 @@
 #include <Python.h>
 #include "structmember.h"
-#define PY_ARRAY_UNIQUE_SYMBOL PYMEX_ARRAY_API
-#define NPY_USE_PYMEM 1
-#include <numpy/arrayobject.h>
+#if PYMEX_USE_NUMPY
+ #define PY_ARRAY_UNIQUE_SYMBOL PYMEX_ARRAY_API
+ #define NPY_USE_PYMEM 1
+ #include <numpy/arrayobject.h>
+#endif
 #define LIBMEXMODULE
 #include "pymex.h"
 #include <mex.h>
@@ -330,6 +332,66 @@ mxArray_mxGetElementSize(PyObject* self)
   return PyLong_FromSize_t(sz);
 }
 
+static PyObject* 
+mxArray_float(PyObject* self)
+{
+  mxArray* ptr = mxArrayPtr(self);
+  if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
+    double val = mxGetScalar(ptr);
+    return PyFloat_FromDouble(val);
+  }
+  else {
+    if (!ptr)
+      return PyErr_Format(PyExc_ValueError, "Null pointer");
+    else if (mxIsEmpty(ptr))
+      return PyErr_Format(PyExc_ValueError, "Empty array");
+    else
+      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
+  }
+}
+
+static PyObject* 
+mxArray_long(PyObject* self)
+{
+  mxArray* ptr = mxArrayPtr(self);
+  if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
+    long long val = (long long) mxGetScalar(ptr);
+    return PyLong_FromLongLong(val);
+  }
+  else {
+    if (!ptr)
+      return PyErr_Format(PyExc_ValueError, "Null pointer");
+    else if (mxIsEmpty(ptr))
+      return PyErr_Format(PyExc_ValueError, "Empty array");
+    else
+      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
+  }
+}
+
+static PyObject* 
+mxArray_int(PyObject* self)
+{
+  mxArray* ptr = mxArrayPtr(self);
+  if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
+    long val = (long) mxGetScalar(ptr);
+    return PyInt_FromLong(val);
+  }
+  else {
+    if (!ptr)
+      return PyErr_Format(PyExc_ValueError, "Null pointer");
+    else if (mxIsEmpty(ptr))
+      return PyErr_Format(PyExc_ValueError, "Empty array");
+    else
+      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
+  }
+}
+
+static PyObject*
+mxArray_index(PyObject* self)
+{
+  return mxArray_long(self);
+}
+
 static PyMethodDef mxArray_methods[] = {
   {"mxGetClassID", (PyCFunction)mxArray_mxGetClassID, METH_NOARGS,
    "Returns the ClassId of the mxArray"},
@@ -362,6 +424,48 @@ static PyMethodDef mxArray_methods[] = {
   {NULL}
 };
 
+static PyNumberMethods mxArray_numbermethods = {
+  0, /*binaryfunc nb_add;*/
+  0, /*binaryfunc nb_subtract;*/
+  0, /*binaryfunc nb_multiply;*/
+  0, /*binaryfunc nb_divide;*/
+  0, /*binaryfunc nb_remainder;*/
+  0, /*binaryfunc nb_divmod;*/
+  0, /*ternaryfunc nb_power;*/
+  0, /*unaryfunc nb_negative;*/
+  0, /*unaryfunc nb_positive;*/
+  0, /*unaryfunc nb_absolute;*/
+  0, /*inquiry nb_nonzero;     */
+  0, /*unaryfunc nb_invert;*/
+  0, /*binaryfunc nb_lshift;*/
+  0, /*binaryfunc nb_rshift;*/
+  0, /*binaryfunc nb_and;*/
+  0, /*binaryfunc nb_xor;*/
+  0, /*binaryfunc nb_or;*/
+  0, /*coercion nb_coerce;     */
+  mxArray_int, /*unaryfunc nb_int;*/
+  mxArray_long, /*unaryfunc nb_long;*/
+  mxArray_float, /*unaryfunc nb_float;*/
+  0, /*unaryfunc nb_oct;*/
+  0, /*unaryfunc nb_hex;*/
+  0, /*binaryfunc nb_inplace_add;*/
+  0, /*binaryfunc nb_inplace_subtract;*/
+  0, /*binaryfunc nb_inplace_multiply;*/
+  0, /*binaryfunc nb_inplace_divide;*/
+  0, /*binaryfunc nb_inplace_remainder;*/
+  0, /*ternaryfunc nb_inplace_power;*/
+  0, /*binaryfunc nb_inplace_lshift;*/
+  0, /*binaryfunc nb_inplace_rshift;*/
+  0, /*binaryfunc nb_inplace_and;*/
+  0, /*binaryfunc nb_inplace_xor;*/
+  0, /*binaryfunc nb_inplace_or;*/
+  0, /*binaryfunc nb_floor_divide;*/
+  0, /*binaryfunc nb_true_divide;*/
+  0, /*binaryfunc nb_inplace_floor_divide;*/
+  0, /*binaryfunc nb_inplace_true_divide;*/
+  mxArray_index, /*unaryfunc nb_index;*/
+};
+
 static PyTypeObject mxArrayType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -374,7 +478,7 @@ static PyTypeObject mxArrayType = {
     0,                         /*tp_setattr*/
     0,                         /*tp_compare*/
     0,                         /*tp_repr*/
-    0,                         /*tp_as_number*/
+    &mxArray_numbermethods,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
     0,                         /*tp_hash */
@@ -413,13 +517,17 @@ PyMODINIT_FUNC
 initlibmexmodule(void)
 {
   mxArrayType.tp_new = PyType_GenericNew;
+  /*mxArrayType.tp_as_number = mxArray_numbermethods;*/
   if (PyType_Ready(&mxArrayType) < 0) return;
+
 
   libmexmodule = Py_InitModule("libmex", libmex_methods);
 
   Py_INCREF(&mxArrayType);
   PyModule_AddObject(libmexmodule, "mxArray", (PyObject*) &mxArrayType);
 
+  #if PYMEX_USE_NUMPY
   /* numpy C-API import */
   import_array();
+  #endif
 }

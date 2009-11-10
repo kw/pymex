@@ -168,7 +168,7 @@ PYMEX(CALL, 2,3, {
 	mexErrMsgIdAndTxt("python:NoKWargs", "kwargs must be a dict or null");
     }
     PyObject* result = PyObject_Call(callobj, args, kwargs);
-    plhs[0] = box(result);
+    plhs[0] = Any_PyObject_to_mxArray(result);
   })
 
 PYMEX(IS_CALLABLE, 1,1, {
@@ -178,7 +178,7 @@ PYMEX(IS_CALLABLE, 1,1, {
 PYMEX(GET_ATTR, 2,2, {
     PyObject* pyobj = unbox(prhs[0]);
     PyObject* name = unboxn(prhs[1]);
-    plhs[0] = box(PyObject_GetAttr(pyobj, name));
+    plhs[0] = Any_PyObject_to_mxArray(PyObject_GetAttr(pyobj, name));
     Py_XDECREF(name);
   })
 
@@ -200,15 +200,18 @@ PYMEX(HAS_ATTR, 2, 2, {
 
 PYMEX(GET_ITEM, 2,2, {
     PyObject* pyobj = unbox(prhs[0]);
-    PyObject* key = Any_mxArray_to_PyObject(prhs[1]);
-    plhs[0] = box(PyObject_GetItem(pyobj, key));
+    PyObject* key = unboxn(prhs[1]);
+    plhs[0] = Any_PyObject_to_mxArray(PyObject_GetItem(pyobj, key));
+    Py_XDECREF(key);
   })
 
 PYMEX(SET_ITEM, 3,3, {
     PyObject* pyobj = unbox(prhs[0]);
-    PyObject* key = Any_mxArray_to_PyObject(prhs[1]);
-    PyObject* val = Any_mxArray_to_PyObject(prhs[2]);
+    PyObject* key = unboxn(prhs[1]);
+    PyObject* val = unboxn(prhs[2]);
     PyObject_SetItem(pyobj, key, val);
+    Py_XDECREF(key);
+    Py_XDECREF(val);
   })
 
 PYMEX(GET_MODULE_DICT, 0,0, {

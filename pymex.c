@@ -66,7 +66,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
        here's a mexLock that is never released. You can
        release it manually with pymex('MEXUNLOCK') if
        you'd like, of course. Good luck with that. */
+    #ifdef PYMEX_USE_NUMPY
     mexLock();
+    #endif
   }
   mexSetTrapFlag(1);
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
