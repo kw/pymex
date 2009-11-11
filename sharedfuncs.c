@@ -327,8 +327,10 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
   else if (PyArray_HasArrayInterface(pyobj, array))
     return box(array);
   #endif
+  /*
   else if (PySequence_Check(pyobj))
     return PySequence_to_mxCell(pyobj);  
+  */
   else
     return boxb(pyobj);
 }
