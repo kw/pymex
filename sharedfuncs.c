@@ -556,3 +556,21 @@ mxArray* PyArray_to_mxArray(PyObject* pyobj) {
   return result;
 }
 #endif /* PYMEX_USE_NUMPY */
+
+char mxClassID_to_Numpy_Typekind(mxClassID mxclass) {
+  switch (mxclass) {
+  case mxLOGICAL_CLASS: return 'b';
+  case mxCHAR_CLASS: return 'S';
+  case mxINT8_CLASS: 
+  case mxINT16_CLASS: 
+  case mxINT32_CLASS: 
+  case mxINT64_CLASS: 
+  case mxUINT8_CLASS: return 'i'; 
+  case mxUINT16_CLASS: 
+  case mxUINT32_CLASS: 
+  case mxUINT64_CLASS: return 'u'; 
+  case mxSINGLE_CLASS: 
+  case mxDOUBLE_CLASS: return 'f';
+  default: return 'V';
+  }
+}

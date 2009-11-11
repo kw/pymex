@@ -86,6 +86,7 @@ static PyMethodDef libmex_methods[] = {
 
 /* libmx mxArray type */
 
+
 static void 
 mxArray_dealloc(PyObject* self)
 {
@@ -146,11 +147,6 @@ mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
     return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field.", fieldname);
   mxArray* item = mxGetField(ptr, (mwIndex) index, fieldname);
   return Any_mxArray_to_PyObject(item);
-}
-
-void test_handler(int signum) 
-{
-  mexPrintf("got signal %d\n", signum);
 }
 
 /* FIXME: mxGetProperty and mxSetProperty cause SIGABRT if there's some sort of error,
@@ -427,6 +423,66 @@ mxArray_repr(PyObject* self)
   else return mxArray_repr_helper(self);     
 }
 
+/* This definition shamelessly copied from NumPy to remove dependence on it for building. */
+#if !PYMEX_USE_NUMPY
+typedef struct {
+  int two;              /* contains the integer 2 -- simple sanity check */
+  int nd;               /* number of dimensions */
+  char typekind;        /* kind in array --- character code of typestr */
+  int itemsize;         /* size of each element */
+  int flags;            /* flags indicating how the data should be interpreted */
+                        /*   must set ARR_HAS_DESCR bit to validate descr */
+  Py_intptr_t *shape;   /* A length-nd array of shape information */
+  Py_intptr_t *strides; /* A length-nd array of stride information */
+  void *data;           /* A pointer to the first element of the array */
+  PyObject *descr;      /* NULL or data-description (same as descr key
+                                of __array_interface__) -- must set ARR_HAS_DESCR
+                                flag or this will be ignored. */
+} PyArrayInterface;
+#define NPY_CONTIGUOUS    0x0001
+#define NPY_FORTRAN       0x0002
+#define NPY_ALIGNED       0x0100
+#define NPY_NOTSWAPPED    0x0200
+#define NPY_WRITEABLE     0x0400
+#define NPY_ARR_HAS_DESCR  0x0800
+#endif
+
+static void numpy_array_struct_destructor(void* ptr, void* desc)
+{
+  PyMem_Free(ptr);
+  Py_DECREF(desc);
+}
+
+static PyObject* mxArray_numpy_array_struct(PyObject* self, void* closure)
+{
+  PyArrayInterface* info = PyMem_New(PyArrayInterface, 1);
+  mxArray* ptr = mxArrayPtr(self);
+  info->two = 2;
+  info->nd = (int) mxGetNumberOfDimensions(ptr);
+  info->typekind = mxClassID_to_Numpy_Typekind(mxGetClassID(ptr));
+  info->itemsize = (int) mxGetElementSize(ptr);
+  info->flags = NPY_FORTRAN | NPY_ALIGNED | NPY_NOTSWAPPED | NPY_WRITEABLE;
+  info->shape = PyMem_New(Py_intptr_t, info->nd);
+  int i;
+  const mwSize* dims = mxGetDimensions(ptr);
+  for(i=0; i<info->nd; i++)
+    info->shape[i] = (Py_intptr_t) dims[i];
+  info->strides = NULL;
+  info->data = mxGetData(ptr);
+  info->descr = NULL;
+  Py_INCREF(self);  
+  return PyCObject_FromVoidPtrAndDesc(info, self, numpy_array_struct_destructor);
+}
+
+static PyGetSetDef mxArray_getseters[] = {
+    {"__array_struct__", 
+     (getter)mxArray_numpy_array_struct, NULL, 
+     "NumPy array interface",
+     NULL},
+    {NULL}  /* Sentinel */
+};
+
+
 static PyMethodDef mxArray_methods[] = {
   {"mxGetClassID", (PyCFunction)mxArray_mxGetClassID, METH_NOARGS,
    "Returns the ClassId of the mxArray"},
@@ -532,7 +588,7 @@ static PyTypeObject mxArrayType = {
     0,		               /* tp_iternext */
     mxArray_methods,             /* tp_methods */
     0,                        /* tp_members */
-    0,                         /* tp_getset */
+    mxArray_getseters,        /* tp_getset */
     0,                         /* tp_base */
     0,                         /* tp_dict */
     0,                         /* tp_descr_get */

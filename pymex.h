@@ -80,6 +80,8 @@ int Py_mxArray_Check(PyObject* pyobj);
 PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate);
 mxArray* PyArray_to_mxArray(PyObject* pyobj);
 PyMODINIT_FUNC initlibmexmodule(void);
+char mxClassID_to_Numpy_Typekind(mxClassID mxclass);
+
 
 #ifndef LIBMEXMODULE
 extern PyObject* libmexmodule;
