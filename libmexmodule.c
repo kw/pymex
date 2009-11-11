@@ -392,6 +392,41 @@ mxArray_index(PyObject* self)
   return mxArray_long(self);
 }
 
+
+/* These two are helper methods. The stringifier has to talk to MATLAB, so it might not be available. Because
+   of this, str and repr must try their preferences and fall back on the simple repr if necessary. */
+static PyObject* mxArray_str_helper(PyObject* self) {
+  PyObject* rawstring = PyObject_CallMethod(libmexmodule, "call", "sO", "any2str", self);
+  PyObject* stringval = PyObject_CallMethod(rawstring, "strip", "");
+  Py_DECREF(rawstring);
+  return stringval;
+}
+static PyObject* mxArray_repr_helper(PyObject* self) {
+  mxArray* ptr = mxArrayPtr(self);
+  return PyString_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
+}
+
+static PyObject*
+mxArray_str(PyObject* self)
+{
+  PyObject* str = mxArray_str_helper(self);
+  if (PyErr_Occurred()) {
+    PyErr_Clear();
+    return mxArray_repr_helper(self);
+  }
+  else return str;
+}
+
+static PyObject*
+mxArray_repr(PyObject* self)
+{
+  mxArray* ptr = mxArrayPtr(self);
+  if ((mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr)) && mxGetNumberOfElements(ptr) < 16) {
+    return mxArray_str(self);
+  }
+  else return mxArray_repr_helper(self);     
+}
+
 static PyMethodDef mxArray_methods[] = {
   {"mxGetClassID", (PyCFunction)mxArray_mxGetClassID, METH_NOARGS,
    "Returns the ClassId of the mxArray"},
@@ -477,13 +512,13 @@ static PyTypeObject mxArrayType = {
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
     0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
+    mxArray_repr,                         /*tp_repr*/
     &mxArray_numbermethods,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
     0,                         /*tp_hash */
     0,                         /*tp_call*/
-    0,                         /*tp_str*/
+    mxArray_str,                         /*tp_str*/
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
