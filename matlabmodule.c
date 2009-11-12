@@ -5,91 +5,22 @@
  #define NPY_USE_PYMEM 1
  #include <numpy/arrayobject.h>
 #endif
-#define LIBMEXMODULE
+#define MATLABMODULE
 #include "pymex.h"
-#include <mex.h>
-#include <signal.h>
 
-#define PY3K_VERSION_HEX 0x3000000
+#if MATLAB_MEX_FILE
+#include "mex.h"
+#define PERSIST_ARRAY(A) mexMakeArrayPersistent(A)
+#else
+#define PERSIST_ARRAY(A) if (1)
+#endif
 
-static PyObject* m_printf(PyObject* self, PyObject* args) {
-  PyObject* format = PySequence_GetItem(args, 0);
-  Py_ssize_t arglength = PySequence_Size(args);
-  PyObject* tuple = PySequence_GetSlice(args, 1, arglength+1);
-  PyObject* out = PyUnicode_Format(format, tuple);
-  PyObject* b_out = PyUnicode_AsASCIIString(out);
-  char* outstr = PyBytes_AsString(b_out);
-  mexPrintf(outstr);
-  Py_DECREF(out);
-  Py_DECREF(b_out);
-  Py_DECREF(tuple);
-  Py_DECREF(format);
-  Py_RETURN_NONE;
-}
 
-static PyObject* m_eval(PyObject* self, PyObject* args) {
-  char* evalstring = NULL;
-  if (!PyArg_ParseTuple(args, "s", &evalstring))
-    return NULL;
-  /* would prefer to use mexCallMATLABWithTrap, but not in 2008a */
-  mexSetTrapFlag(1);
-  mxArray* evalarray[2];
-  evalarray[0] = mxCreateString("base");
-  evalarray[1] = mxCreateString(evalstring);
-  mxArray* out = NULL;
-  int retval = mexCallMATLAB(1, &out, 2, evalarray, "evalin");
-  mxDestroyArray(evalarray[0]);
-  mxDestroyArray(evalarray[1]);
-  /* TODO: Throw some sort of error instead. */
-  if (retval)
-    Py_RETURN_NONE;
-  else {
-    return Any_mxArray_to_PyObject(out);
-  }
-}
-
-static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
-  static char *kwlist[] = {"nargout",NULL};
-  int nargout = -1;
-  PyObject* fakeargs = PyTuple_New(0);
-  if (!PyArg_ParseTupleAndKeywords(fakeargs, kwargs, "|i", kwlist, &nargout))
-    return NULL;
-  Py_DECREF(fakeargs);
-  int nargin = PySequence_Size(args);  
-  mxArray *inargs[nargin];
-  int i;
-  for (i=0; i<nargin; i++) {
-    inargs[i] = Any_PyObject_to_mxArray(PyTuple_GetItem(args, i));
-  }
-  int tupleout = nargout >= 0;
-  if (nargout < 0) nargout = 1;
-  mxArray *outargs[nargout];
-  mexSetTrapFlag(1);
-  int retval = mexCallMATLAB(nargout, outargs, nargin, inargs, "feval");
-  if (retval)
-    return PyErr_Format(PyExc_RuntimeError, "I have no idea what happened");
-  else {
-    if (tupleout) {
-      PyObject* outseq = PyTuple_New(nargout);
-      for (i=0; i<nargout; i++) {
-	PyTuple_SetItem(outseq, i, Any_mxArray_to_PyObject(outargs[i]));
-      }
-      return outseq;
-    }
-    else
-      return Any_mxArray_to_PyObject(outargs[0]);
-  }
-}
-
-static PyMethodDef libmex_methods[] = {
-  {"printf", m_printf, METH_VARARGS, "Print a string using mexPrintf"},
-  {"eval", m_eval, METH_VARARGS, "Evaluates a string using mexEvalString"},
-  {"call", (PyCFunction)m_call, METH_VARARGS | METH_KEYWORDS, "feval the inputs"},
+static PyMethodDef matlab_methods[] = {
   {NULL, NULL, 0, NULL}
 };
 
 /* libmx mxArray type */
-
 
 static void 
 mxArray_dealloc(PyObject* self)
@@ -205,7 +136,7 @@ static int mxAddField_AndInit(mxArray* obj, const char* fieldname, mxArray* fill
   if (fieldnum < 0) return fieldnum;
   for (i=0; i<len; i++) {
     mxArray* nextval = mxDuplicateArray(fillval);
-    mexMakeArrayPersistent(nextval); /* FIXME: Use this line only if linking with libmex */
+    PERSIST_ARRAY(nextval); 
     mxSetFieldByNumber(obj, i, fieldnum, nextval);
   }
   return fieldnum;
@@ -233,7 +164,7 @@ mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
     if (mxAddField_AndInit((mxArray*) ptr, fieldname, NULL) < 0)
       return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field, and could not create it.", fieldname);
   mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue)); /*FIXME: This probably leaks when the input isn't already an mxArray, since the returned object is new but never freed */
-  mexMakeArrayPersistent(mxvalue);
+  PERSIST_ARRAY(mxvalue);
   mxArray* oldval = mxGetField(ptr, (mwIndex) index, fieldname);
   if (oldval) mxDestroyArray(oldval);
   mxSetField((mxArray*) ptr, (mwIndex) index, fieldname, mxvalue);
@@ -274,7 +205,7 @@ mxArray_mxSetCell(PyObject* self, PyObject* args)
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
   mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue));
-  mexMakeArrayPersistent(mxvalue);
+  PERSIST_ARRAY(mxvalue);
   mxArray* oldval = mxGetCell(ptr, (mwIndex) index);
   if (oldval) mxDestroyArray(oldval);
   mxSetCell((mxArray*) ptr, (mwIndex) index, mxvalue);
@@ -397,15 +328,20 @@ mxArray_index(PyObject* self)
 
 /* These two are helper methods. The stringifier has to talk to MATLAB, so it might not be available. Because
    of this, str and repr must try their preferences and fall back on the simple repr if necessary. */
+static PyObject* mxArray_repr_helper(PyObject* self) {
+  mxArray* ptr = mxArrayPtr(self);
+  return PyBytes_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
+}
+
 static PyObject* mxArray_str_helper(PyObject* self) {
+  #if MATLAB_MEX_FILE
   PyObject* rawstring = PyObject_CallMethod(libmexmodule, "call", "sO", "any2str", self);
   PyObject* stringval = PyObject_CallMethod(rawstring, "strip", "");
   Py_DECREF(rawstring);
   return stringval;
-}
-static PyObject* mxArray_repr_helper(PyObject* self) {
-  mxArray* ptr = mxArrayPtr(self);
-  return PyBytes_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
+  #else
+  return mxArray_repr_helper(self);
+  #endif
 }
 
 static PyObject*
@@ -423,10 +359,12 @@ static PyObject*
 mxArray_repr(PyObject* self)
 {
   mxArray* ptr = mxArrayPtr(self);
+  #if MATLAB_MEX_FILE
   if ((mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr)) && mxGetNumberOfElements(ptr) < 16) {
     return mxArray_str(self);
   }
-  else return mxArray_repr_helper(self);     
+  #endif
+  return mxArray_repr_helper(self);     
 }
 
 /* This definition shamelessly copied from NumPy to remove dependence on it for building. */
@@ -607,7 +545,7 @@ static PyNumberMethods mxArray_numbermethods = {
 static PyTypeObject mxArrayType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "libmex.mxArray",          /*tp_name*/
+    "matlab.mxArray",          /*tp_name*/
     sizeof(mxArrayObject),    /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     (destructor)mxArray_dealloc,    /*tp_dealloc*/
@@ -648,7 +586,7 @@ static PyTypeObject mxArrayType = {
 #else /* Py3k */
 static PyTypeObject mxArrayType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "libmex.mxArray",             /* tp_name */
+    "matlab.mxArray",             /* tp_name */
     sizeof(mxArrayObject),             /* tp_basicsize */
     0,                         /* tp_itemsize */
     (destructor)mxArray_dealloc, /* tp_dealloc */
@@ -690,12 +628,12 @@ static PyTypeObject mxArrayType = {
 #endif
 
 #if PY_VERSION_HEX >= PY3K_VERSION_HEX
-static PyModuleDef libmexmodule_def = {
+static PyModuleDef matlabmodule_def = {
     PyModuleDef_HEAD_INIT,
-    "libmex",
-    "Embedded mex API module",
+    "matlab",
+    "MATLAB C-API module container",
     -1,
-    libmex_methods, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL, NULL
 };
 #endif
 
@@ -703,31 +641,36 @@ static PyModuleDef libmexmodule_def = {
 #define PyMODINIT_FUNC PyObject*
 #endif
 PyMODINIT_FUNC
-initlibmexmodule(void)
+initmatlabmodule(void)
 {
   mxArrayType.tp_new = PyType_GenericNew;
   /*mxArrayType.tp_as_number = mxArray_numbermethods;*/
 
   #if PY_VERSION_HEX < PY3K_VERSION_HEX
   if (PyType_Ready(&mxArrayType) < 0) return;
-  libmexmodule = Py_InitModule("libmex", libmex_methods);
-  if (!libmexmodule) return;
+  PyObject* m = Py_InitModule("matlab", matlab_methods);
+  if (!m) return;
   #else
   if (PyType_Ready(&mxArrayType) < 0) return NULL;
-  libmexmodule = PyModule_Create(&libmexmodule_def);
-  if (!libmexmodule) return NULL;
+  PyObject* m = PyModule_Create(&matlabmodule_def);
+  if (!m) return NULL;
   #endif
 
 
   Py_INCREF(&mxArrayType);
-  PyModule_AddObject(libmexmodule, "mxArray", (PyObject*) &mxArrayType);
+  PyModule_AddObject(m, "mxArray", (PyObject*) &mxArrayType);
 
   #if PYMEX_USE_NUMPY
   /* numpy C-API import */
   import_array();
   #endif
 
+  matlabmodule = m;
+
+  initmexmodule();
+  PyModule_AddObject(m, "mex", libmexmodule);
+
   #if PY_VERSION_HEX >= PY3K_VERSION_HEX
-  return libmexmodule;
+  return m;
   #endif
 }

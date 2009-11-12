@@ -10,6 +10,8 @@
  #endif
 #endif 
 
+#define PY3K_VERSION_HEX 0x3000000
+
 /* MATLAB's matrix type library. 
    Don't necessarily want to include the full mex.h everywhere,
    but this should provide all the necessary API for MATLAB types.
@@ -79,7 +81,8 @@ PyObject* Py_mxArray_New(const mxArray* mxobj, bool duplicate);
 int Py_mxArray_Check(PyObject* pyobj);
 PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate);
 mxArray* PyArray_to_mxArray(PyObject* pyobj);
-PyMODINIT_FUNC initlibmexmodule(void);
+PyMODINIT_FUNC initmatlabmodule(void);
+PyMODINIT_FUNC initmexmodule(void);
 char mxClassID_to_Numpy_Typekind(mxClassID mxclass);
 
 
@@ -87,6 +90,12 @@ char mxClassID_to_Numpy_Typekind(mxClassID mxclass);
 extern PyObject* libmexmodule;
 #else
 PyObject* libmexmodule;
+#endif
+
+#ifndef MATLABMODULE
+extern PyObject* matlabmodule;
+#else
+PyObject* matlabmodule;
 #endif
 
 #define mxArrayPtr(pyobj) ((mxArray*) ((mxArrayObject*)pyobj)->mxptr)
