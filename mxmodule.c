@@ -260,7 +260,7 @@ static PyObject*
 mxArray_float(PyObject* self)
 {
   mxArray* ptr = mxArrayPtr(self);
-  if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
+  if (ptr && mxGetNumberOfElements(ptr) == 1 && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
     double val = mxGetScalar(ptr);
     return PyFloat_FromDouble(val);
   }
@@ -269,6 +269,8 @@ mxArray_float(PyObject* self)
       return PyErr_Format(PyExc_ValueError, "Null pointer");
     else if (mxIsEmpty(ptr))
       return PyErr_Format(PyExc_ValueError, "Empty array");
+    else if (mxGetNumberOfElements(ptr) > 1)
+      return PyErr_Format(PyExc_ValueError, "Not a scalar");
     else
       return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
   }
@@ -278,7 +280,8 @@ static PyObject*
 mxArray_long(PyObject* self)
 {
   mxArray* ptr = mxArrayPtr(self);
-  if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
+  if (ptr && mxGetNumberOfElements(ptr) == 1 && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
+    /* FIXME: This is a bad idea. Look up the correct type and interpret appropriately. */
     long long val = (long long) mxGetScalar(ptr);
     return PyLong_FromLongLong(val);
   }
@@ -287,30 +290,12 @@ mxArray_long(PyObject* self)
       return PyErr_Format(PyExc_ValueError, "Null pointer");
     else if (mxIsEmpty(ptr))
       return PyErr_Format(PyExc_ValueError, "Empty array");
+    else if (mxGetNumberOfElements(ptr) > 1)
+      return PyErr_Format(PyExc_ValueError, "Not a scalar");
     else
       return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
   }
 }
-
-#if PY_VERSION_HEX < PY3K_VERSION_HEX
-static PyObject* 
-mxArray_int(PyObject* self)
-{
-  mxArray* ptr = mxArrayPtr(self);
-  if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
-    long val = (long) mxGetScalar(ptr);
-    return PyLong_FromLong(val);
-  }
-  else {
-    if (!ptr)
-      return PyErr_Format(PyExc_ValueError, "Null pointer");
-    else if (mxIsEmpty(ptr))
-      return PyErr_Format(PyExc_ValueError, "Empty array");
-    else
-      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
-  }
-}
-#endif
 
 static PyObject*
 mxArray_index(PyObject* self)
@@ -472,7 +457,7 @@ static PyNumberMethods mxArray_numbermethods = {
   0, /*binaryfunc nb_xor;*/
   0, /*binaryfunc nb_or;*/
   0, /*coercion nb_coerce;     */
-  mxArray_int, /*unaryfunc nb_int;*/
+  mxArray_long, /*unaryfunc nb_int;*/
   mxArray_long, /*unaryfunc nb_long;*/
   mxArray_float, /*unaryfunc nb_float;*/
   0, /*unaryfunc nb_oct;*/
