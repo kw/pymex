@@ -45,15 +45,19 @@ initmatlabmodule(void)
   matlabmodule = m;
 
   initmexmodule();
+  Py_INCREF(mexmodule);
   PyModule_AddObject(m, "mex", mexmodule);
 
   initmxmodule();
+  Py_INCREF(mxmodule);
   PyModule_AddObject(m, "mx", mxmodule);
 
   initmatmodule();
+  Py_INCREF(matmodule);
   PyModule_AddObject(m, "mat", matmodule);
   
   initengmodule();
+  Py_INCREF(engmodule);
   PyModule_AddObject(m, "eng", engmodule);
 
   #if PY_VERSION_HEX >= PY3K_VERSION_HEX
