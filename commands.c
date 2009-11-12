@@ -58,7 +58,7 @@ PYMEX(TO_BOOL, 1,1, {
 PYMEX_BIN_OP(ADD, PyNumber_Add)
 PYMEX_BIN_OP(SUBTRACT, PyNumber_Subtract)
 PYMEX_BIN_OP(MULTIPLY, PyNumber_Multiply)
-PYMEX_BIN_OP(DIVIDE, PyNumber_Divide)
+PYMEX_BIN_OP(DIVIDE, PyNumber_TrueDivide)
 PYMEX_BIN_OP(REM, PyNumber_Remainder)
 PYMEX_BIN_OP(MOD, PyNumber_Divmod)
 PYMEX_BIN_OP(BITAND, PyNumber_And)

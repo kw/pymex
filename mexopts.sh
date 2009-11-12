@@ -338,13 +338,14 @@
 #
 #----------------------------------------------------------------------------
 #           CC="$CC"
-
-NUMPY_INCLUDE=`python -c 'import numpy; print(numpy.get_include());'`
-PY_CFLAGS=`python-config --cflags`
-CFLAGS="$CFLAGS $PY_CFLAGS -I$NUMPY_INCLUDE"
+PYTHON=python2.6
+NUMPY_INCLUDE=
+#NUMPY_INCLUDE=-I`${PYTHON} -c 'import numpy; print(numpy.get_include());'`
+PY_CFLAGS=`${PYTHON}-config --cflags`
+CFLAGS="$CFLAGS $PY_CFLAGS $NUMPY_INCLUDE"
 #           COPTIMFLAGS="$COPTIMFLAGS"
 #           CDEBUGFLAGS="$CDEBUGFLAGS"
-PY_CLIBS=`python-config --libs`
+PY_CLIBS=`${PYTHON}-config --libs`
 CLIBS="$CLIBS $PY_CLIBS"
 #
 #           FC="$FC"
@@ -354,10 +355,10 @@ CLIBS="$CLIBS $PY_CLIBS"
 #           FLIBS="$FLIBS"
 #
 #           LD="$LD"
-PY_LDFLAGS=`python-config --ldflags`
+PY_LDFLAGS=`${PYTHON}-config --ldflags`
 # For some reason my user-installed 2.6 build doesn't put an appropriate
 # -L item in LDFLAGS, so I'm generating one of my own.
-PY_LIBDIR=-L`python-config --prefix`/lib
+PY_LIBDIR=-L`${PYTHON}-config --prefix`/lib
 LDFLAGS="$LDFLAGS $PY_LDFLAGS $PY_LIBDIR"
 #           LDOPTIMFLAGS="$LDOPTIMFLAGS"
 #           LDDEBUGFLAGS="$LDDEBUGFLAGS"

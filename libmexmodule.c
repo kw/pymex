@@ -10,14 +10,18 @@
 #include <mex.h>
 #include <signal.h>
 
+#define PY3K_VERSION_HEX 0x3000000
+
 static PyObject* m_printf(PyObject* self, PyObject* args) {
   PyObject* format = PySequence_GetItem(args, 0);
   Py_ssize_t arglength = PySequence_Size(args);
   PyObject* tuple = PySequence_GetSlice(args, 1, arglength+1);
-  PyObject* out = PyString_Format(format, tuple);
-  char* outstr = PyString_AsString(out);
+  PyObject* out = PyUnicode_Format(format, tuple);
+  PyObject* b_out = PyUnicode_AsASCIIString(out);
+  char* outstr = PyBytes_AsString(b_out);
   mexPrintf(outstr);
   Py_DECREF(out);
+  Py_DECREF(b_out);
   Py_DECREF(tuple);
   Py_DECREF(format);
   Py_RETURN_NONE;
@@ -99,14 +103,14 @@ static PyObject*
 mxArray_mxGetClassID(PyObject* self)
 {
   mxClassID id = mxGetClassID(mxArrayPtr(self));
-  return PyInt_FromLong((long) id);
+  return PyLong_FromLong((long) id);
 }
 
 static PyObject*
 mxArray_mxGetClassName(PyObject* self)
 {
   const char* class = mxGetClassName(mxArrayPtr(self));
-  return PyString_FromString(class);
+  return PyBytes_FromString(class);
 }
 
 /* TODO: Add keyword option to index from 1 instead of 0 */
@@ -123,7 +127,7 @@ mxArray_mxCalcSingleSubscript(PyObject* self, PyObject* args)
   mwIndex subs[len];
   mwIndex i;
   for (i=0; i<len; i++)
-    subs[i] = (mwIndex) PyInt_AsLong(PyTuple_GetItem(args, (Py_ssize_t) i));
+    subs[i] = (mwIndex) PyLong_AsLong(PyTuple_GetItem(args, (Py_ssize_t) i));
   return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
 }
 
@@ -288,7 +292,7 @@ mxArray_mxGetFields(PyObject* self)
     const char* fieldname = mxGetFieldNameByNumber(ptr, i);
     if (!fieldname)
       return PyErr_Format(PyExc_RuntimeError, "Unable to read field %d from struct.", i);
-    PyObject* pyname = PyString_FromString(fieldname);
+    PyObject* pyname = PyBytes_FromString(fieldname);
     PyTuple_SetItem(outtuple, i, pyname);
   }
   return outtuple;
@@ -316,7 +320,7 @@ mxArray_mxGetDimensions(PyObject* self)
   const mwSize* dimarray = mxGetDimensions(mxArrayPtr(self));
   Py_ssize_t i;
   for (i=0; i<ndims; i++) {
-    PyTuple_SetItem(dimtuple, i, PyInt_FromSsize_t((Py_ssize_t) dimarray[i]));
+    PyTuple_SetItem(dimtuple, i, PyLong_FromSsize_t((Py_ssize_t) dimarray[i]));
   }
   return dimtuple;
 }
@@ -364,13 +368,14 @@ mxArray_long(PyObject* self)
   }
 }
 
+#if PY_VERSION_HEX < PY3K_VERSION_HEX
 static PyObject* 
 mxArray_int(PyObject* self)
 {
   mxArray* ptr = mxArrayPtr(self);
   if (ptr && !mxIsEmpty(ptr) && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
     long val = (long) mxGetScalar(ptr);
-    return PyInt_FromLong(val);
+    return PyLong_FromLong(val);
   }
   else {
     if (!ptr)
@@ -381,6 +386,7 @@ mxArray_int(PyObject* self)
       return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
   }
 }
+#endif
 
 static PyObject*
 mxArray_index(PyObject* self)
@@ -399,7 +405,7 @@ static PyObject* mxArray_str_helper(PyObject* self) {
 }
 static PyObject* mxArray_repr_helper(PyObject* self) {
   mxArray* ptr = mxArrayPtr(self);
-  return PyString_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
+  return PyBytes_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
 }
 
 static PyObject*
@@ -515,6 +521,7 @@ static PyMethodDef mxArray_methods[] = {
   {NULL}
 };
 
+#if PY_VERSION_HEX < PY3K_VERSION_HEX
 static PyNumberMethods mxArray_numbermethods = {
   0, /*binaryfunc nb_add;*/
   0, /*binaryfunc nb_subtract;*/
@@ -556,7 +563,47 @@ static PyNumberMethods mxArray_numbermethods = {
   0, /*binaryfunc nb_inplace_true_divide;*/
   mxArray_index, /*unaryfunc nb_index;*/
 };
+#else /* Py3k */
+static PyNumberMethods mxArray_numbermethods = {
+  0, /* binaryfunc nb_add */
+  0, /* binaryfunc nb_subtract */
+  0, /* binaryfunc nb_multiply */
+  0, /* binaryfunc nb_remainder */
+  0, /* binaryfunc nb_divmod */
+  0, /* ternaryfunc nb_power */
+  0, /* unaryfunc nb_negative */
+  0, /* unaryfunc nb_positive */
+  0, /* unaryfunc nb_absolute */
+  0, /* inquiry nb_bool */
+  0, /* unaryfunc nb_invert */
+  0, /* binaryfunc nb_lshift */
+  0, /* binaryfunc nb_rshift */
+  0, /* binaryfunc nb_and */
+  0, /* binaryfunc nb_xor */
+  0, /* binaryfunc nb_or */
+  mxArray_long, /* unaryfunc nb_int */
+  0, /* void *nb_reserved */
+  mxArray_float, /* unaryfunc nb_float */
+  0, /* binaryfunc nb_inplace_add */
+  0, /* binaryfunc nb_inplace_subtract */
+  0, /* binaryfunc nb_inplace_multiply */
+  0, /* binaryfunc nb_inplace_remainder */
+  0, /* ternaryfunc nb_inplace_power */
+  0, /* binaryfunc nb_inplace_lshift */
+  0, /* binaryfunc nb_inplace_rshift */
+  0, /* binaryfunc nb_inplace_and */
+  0, /* binaryfunc nb_inplace_xor */
+  0, /* binaryfunc nb_inplace_or */
+  0, /* binaryfunc nb_floor_divide */
+  0, /* binaryfunc nb_true_divide */
+  0, /* binaryfunc nb_inplace_floor_divide */
+  0, /* binaryfunc nb_inplace_true_divide */
+  mxArray_index, /* unaryfunc nb_index */
+};
 
+#endif
+
+#if PY_VERSION_HEX < PY3K_VERSION_HEX
 static PyTypeObject mxArrayType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -598,21 +645,79 @@ static PyTypeObject mxArrayType = {
     0,                         /* tp_alloc */
     0,                        /* tp_new */
 };
+#else /* Py3k */
+static PyTypeObject mxArrayType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "libmex.mxArray",             /* tp_name */
+    sizeof(mxArrayObject),             /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)mxArray_dealloc, /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    mxArray_repr,                         /* tp_repr */
+    &mxArray_numbermethods,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    mxArray_str,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT |
+        Py_TPFLAGS_BASETYPE,   /* tp_flags */
+    "mxArray objects",           /* tp_doc */
+    0,		               /* tp_traverse */
+    0,		               /* tp_clear */
+    0,		               /* tp_richcompare */
+    0,		               /* tp_weaklistoffset */
+    0,		               /* tp_iter */
+    0,		               /* tp_iternext */
+    mxArray_methods,             /* tp_methods */
+    0,                        /* tp_members */
+    mxArray_getseters,           /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    0,                         /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
+#endif
 
-
+#if PY_VERSION_HEX >= PY3K_VERSION_HEX
+static PyModuleDef libmexmodule_def = {
+    PyModuleDef_HEAD_INIT,
+    "libmex",
+    "Embedded mex API module",
+    -1,
+    libmex_methods, NULL, NULL, NULL, NULL
+};
+#endif
 
 #ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
+#define PyMODINIT_FUNC PyObject*
 #endif
 PyMODINIT_FUNC
 initlibmexmodule(void)
 {
   mxArrayType.tp_new = PyType_GenericNew;
   /*mxArrayType.tp_as_number = mxArray_numbermethods;*/
+
+  #if PY_VERSION_HEX < PY3K_VERSION_HEX
   if (PyType_Ready(&mxArrayType) < 0) return;
-
-
   libmexmodule = Py_InitModule("libmex", libmex_methods);
+  if (!libmexmodule) return;
+  #else
+  if (PyType_Ready(&mxArrayType) < 0) return NULL;
+  libmexmodule = PyModule_Create(&libmexmodule_def);
+  if (!libmexmodule) return NULL;
+  #endif
+
 
   Py_INCREF(&mxArrayType);
   PyModule_AddObject(libmexmodule, "mxArray", (PyObject*) &mxArrayType);
@@ -620,5 +725,9 @@ initlibmexmodule(void)
   #if PYMEX_USE_NUMPY
   /* numpy C-API import */
   import_array();
+  #endif
+
+  #if PY_VERSION_HEX >= PY3K_VERSION_HEX
+  return libmexmodule;
   #endif
 }

@@ -121,19 +121,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (err) {
     PyObject *err_type, *err_value, *err_traceback;
     PyErr_Fetch(&err_type, &err_value, &err_traceback);
-    /*mexPutVariable("global", "PYMEX_ERR_TYPE", box(err_type));
-    mexPutVariable("global", "PYMEX_ERR_VALUE", box(err_value));
-    mexPutVariable("global", "PYMEX_ERR_TRACE", box(err_traceback));*/
     if (!err_value)
-      err_value = PyString_FromString("<no value>");
-    PyObject* pyid = PyString_FromString("Python:"); 
-    PyString_ConcatAndDel(&pyid, PyObject_GetAttrString(err_type, "__name__"));
-    PyObject* tuple = Py_BuildValue("ON", pyid, PyObject_Str(err_value));
-    PyObject* format = PyString_FromString("%s -> %s\n");
-    PyObject* pymsg = PyString_Format(format, tuple);
-    char* id = PyString_AsString(pyid);
-    char* msg = PyString_AsString(pymsg);
+      err_value = PyUnicode_FromString("<no value>");
+    /* FIXME: This seems a tad overcomplicated for some simple string concatentaion. */
+    PyObject* pyid = PyUnicode_FromString("Python:"); 
+    PyObject* errname = PyObject_GetAttrString(err_type, "__name__");
+    PyObject* msgid = PyUnicode_Concat(pyid, errname);
     Py_DECREF(pyid);
+    Py_DECREF(errname);
+    PyObject* tuple = Py_BuildValue("ON", msgid, PyObject_Str(err_value));
+    PyObject* format = PyUnicode_FromString("%s -> %s\n");
+    PyObject* pymsg = PyUnicode_Format(format, tuple);
+    PyObject* b_id = PyUnicode_AsASCIIString(msgid);
+    PyObject* b_msg = PyUnicode_AsASCIIString(pymsg);
+    char* id = PyBytes_AsString(b_id);
+    char* msg = PyBytes_AsString(b_msg);
+    Py_DECREF(b_id);
+    Py_DECREF(b_msg);
+    Py_DECREF(msgid);
     Py_DECREF(tuple);
     Py_DECREF(format);
     Py_DECREF(pymsg);

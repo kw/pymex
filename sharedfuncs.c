@@ -39,7 +39,7 @@ mxArray* box_by_type(PyObject* pyobj) {
       PyObject* modname = PyObject_GetAttrString(item, "__module__");
       PyObject* cleanmodname = PyObject_CallMethod(modname, "strip", "s", "_");
       PyObject* name = PyObject_GetAttrString(item, "__name__");
-      snprintf(mlname, 256, package, PyString_AsString(cleanmodname), PyString_AsString(name));
+      snprintf(mlname, 256, package, PyBytes_AsString(cleanmodname), PyBytes_AsString(name));
       PYMEX_DEBUG("Checking for %s...\n", mlname);
       Py_DECREF(name);
       Py_DECREF(cleanmodname);
@@ -135,17 +135,17 @@ PyObject* mxChar_to_PyString(const mxArray* mxchar) {
   char* tempstring = mxArrayToString(mxchar);
   if (!tempstring)
     mexErrMsgTxt("Couldn't stringify mxArray for some reason.");
-  PyObject* pystr = PyString_FromString(tempstring);
+  PyObject* pystr = PyBytes_FromString(tempstring);
   mxFree(tempstring);
   if (!pystr)
     mexErrMsgTxt("Couldn't convert from string to PyString");
   return pystr;
 }
 
-mxArray* PyString_to_mxChar(PyObject* pystr) {
-  if (!pystr || !PyString_Check(pystr))
+mxArray* PyBytes_to_mxChar(PyObject* pystr) {
+  if (!pystr || !PyBytes_Check(pystr))
     mexErrMsgTxt("Input isn't a PyString");
-  char* tempstring = PyString_AsString( pystr);
+  char* tempstring = PyBytes_AsString( pystr);
   mxArray* mxchar = mxCreateString(tempstring);
   return mxchar;
 }
@@ -154,7 +154,7 @@ mxArray* PyObject_to_mxChar(PyObject* pyobj) {
   mxArray* mxchar;
   if (pyobj) {
     PyObject* pystr = PyObject_Str(pyobj);
-    mxchar = PyString_to_mxChar(pystr);
+    mxchar = PyBytes_to_mxChar(pystr);
     Py_DECREF(pystr);
   } 
   else {
@@ -262,7 +262,7 @@ int PySequence_is_Numeric(PyObject* pyobj) {
       Py_DECREF(item);
       return 0;
     }
-    if (PyInt_Check(item) || PyLong_Check(item))
+    if (PyLong_Check(item) || PyLong_Check(item))
       hasint = 1;
     else if (PyFloat_Check(item))
       hasfloat = 1;
@@ -309,15 +309,20 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
   #endif
   if (!pyobj)
     return box(pyobj); /* Null pointer */
-  else if (PyString_Check(pyobj))
-    return PyString_to_mxChar(pyobj);
+  else if (PyBytes_Check(pyobj))
+    return PyBytes_to_mxChar(pyobj);
   #if PYMEX_USE_NUMPY
   else if (PyArray_Check(pyobj))
     return PyArray_to_mxArray(pyobj);
   #endif
   else if (PyBool_Check(pyobj))
     return PyObject_to_mxLogical(pyobj);
-  else if (PyInt_Check(pyobj) || PyLong_Check(pyobj))
+  else if (PyLong_Check(pyobj) 
+  #if PY_VERSION_HEX < 0x02050000
+	   /* Py3k has no ints, by 2.6 still does. */
+	   || PyInt_Check(pyobj)
+  #endif
+	   )
     return PyObject_to_mxLong(pyobj);
   else if (PyFloat_Check(pyobj))
     return PyObject_to_mxDouble(pyobj);
