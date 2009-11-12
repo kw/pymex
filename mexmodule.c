@@ -1,4 +1,22 @@
-#define LIBMEXMODULE
+/*
+  The MATLAB Extension library module.
+  This module (in theory) handles all communication with MATLAB originating
+  on the python side. This is not actually true, since libmx will call into
+  the MATLAB interpreter for certain things if it is available. Similarly,
+  our matlab.mx library uses some libmex things when necessary. It calls into
+  matlab.mex to generate string representations of objects, and directly calls
+  mexMakeArrayPersistent when it creates things in mex mode. 
+ */
+/*
+  FIXME: libmex is not threadsafe. Neither is CPython, but at least we have the GIL.
+  MATLAB does not even have a concept of user-accessible independent threads, so it
+  should be no surprise that they have no user-accessible locking mechanism. It might
+  be appropriate to add a "MIL" to serialize libmex functions. Note that certain libmx
+  functions call into libmex when compiled in mex mode, but which ones exactly? That
+  appears to be undocumented, but we can make some educated guesses, and should modify
+  matlab.mx accordingly if a MIL is implemented.
+*/
+#define MEXMODULE
 #include "pymex.h"
 #if MATLAB_MEX_FILE
 #include <mex.h>
@@ -89,9 +107,9 @@ static PyModuleDef mexmodule_def = {
     PyModuleDef_HEAD_INIT,
     "matlab.mex",
     #if MATLAB_MEX_FILE
-    "Embedded mex API module",
+    "MATLAB Extension API module",
     #else
-    "Embedded mex API module (only available inside MATLAB)",
+    "MATLAB Extension API module (only available inside MATLAB)",
     #endif
     -1,
     mex_methods, NULL, NULL, NULL, NULL
@@ -106,14 +124,20 @@ initmexmodule(void)
 {
 
   #if PY_VERSION_HEX < PY3K_VERSION_HEX
-  PyObject* m = Py_InitModule("matlab.mex", mex_methods);
+  PyObject* m = Py_InitModule3("matlab.mex", mex_methods, 
+    #if MATLAB_MEX_FILE
+    "MATLAB Extension API module"
+    #else
+    "MATLAB Extension API module (only available inside MATLAB)"
+    #endif
+			       );
   if (!m) return;
   #else
   PyObject* m = PyModule_Create(&mexmodule_def);
   if (!m) return NULL;
   #endif
 
-  libmexmodule = m;
+  mexmodule = m;
 
   #if PY_VERSION_HEX >= PY3K_VERSION_HEX
   return m;

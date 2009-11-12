@@ -349,16 +349,16 @@ PyObject* Py_mxArray_New(const mxArray* mxobj, bool duplicate) {
   else {
     copy = (mxArray*) mxobj;
   }
-  if (!matlabmodule)
-    mexErrMsgTxt("Uh oh, no matlabmodule?");
+  if (!mxmodule)
+    mexErrMsgTxt("Uh oh, no mxmodule?");
   /* TODO: There is probably a better way to do this... */
-  mxArrayObject* newptr = (mxArrayObject*) PyObject_CallMethod(matlabmodule, "mxArray", NULL);
+  mxArrayObject* newptr = (mxArrayObject*) PyObject_CallMethod(mxmodule, "Array", NULL);
   newptr->mxptr = copy;
   return (PyObject*) newptr;
 }
 
 int Py_mxArray_Check(PyObject* pyobj) {
-  return PyObject_IsInstance(pyobj, PyObject_GetAttrString(matlabmodule, "mxArray"));
+  return PyObject_IsInstance(pyobj, PyObject_GetAttrString(mxmodule, "Array"));
 }
 
 #if PYMEX_USE_NUMPY

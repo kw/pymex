@@ -1,3 +1,5 @@
+/* The pymex kernel. See commands.c for kernel commands, or do `c = pymex` for a list. */
+/* FIXME: Make pymex and its related python modules GIL aware. See also mexmodule.c for discussion about a 'MIL'. */
 #include "pymex.h"
 #include <mex.h>
 #define XMACRO_DEFS "commands.c"

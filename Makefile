@@ -9,9 +9,9 @@ MEX=${MATLAB}/bin/mex -f ./mexopts.sh
 
 all: ${TARGET}
 
-${TARGET}: pymex.c sharedfuncs.c commands.c matlabmodule.c mexmodule.c pymex.h mexopts.sh .debug_${DEBUG}
+${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h mexopts.sh .debug_${DEBUG}
 	$(MEX) $(MEXFLAGS) \
-	-DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c sharedfuncs.c matlabmodule.c mexmodule.c
+	-DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c sharedfuncs.c *module.c
 
 .debug_0:
 	@echo "Debug disabled."

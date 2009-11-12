@@ -83,19 +83,40 @@ PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate);
 mxArray* PyArray_to_mxArray(PyObject* pyobj);
 PyMODINIT_FUNC initmatlabmodule(void);
 PyMODINIT_FUNC initmexmodule(void);
+PyMODINIT_FUNC initmxmodule(void);
+PyMODINIT_FUNC initmatmodule(void);
+PyMODINIT_FUNC initengmodule(void);
 char mxClassID_to_Numpy_Typekind(mxClassID mxclass);
 
 
-#ifndef LIBMEXMODULE
-extern PyObject* libmexmodule;
+#ifndef MEXMODULE
+extern PyObject* mexmodule;
 #else
-PyObject* libmexmodule;
+PyObject* mexmodule;
+#endif
+
+#ifndef MXMODULE
+extern PyObject* mxmodule;
+#else
+PyObject* mxmodule;
 #endif
 
 #ifndef MATLABMODULE
 extern PyObject* matlabmodule;
 #else
 PyObject* matlabmodule;
+#endif
+
+#ifndef MATMODULE
+extern PyObject* matmodule;
+#else
+PyObject* matmodule;
+#endif
+
+#ifndef ENGMODULE
+extern PyObject* engmodule;
+#else
+PyObject* engmodule;
 #endif
 
 #define mxArrayPtr(pyobj) ((mxArray*) ((mxArrayObject*)pyobj)->mxptr)
