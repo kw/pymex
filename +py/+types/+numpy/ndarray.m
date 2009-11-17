@@ -1,7 +1,4 @@
-% FIXME: intseq has been changed so that it has the semantics of a "normal" sequence like
-% a list or int and does not support multidimensional indexing, sequence indexing, logical
-% indexing, etc. Move that functionality into ndarray or some other appropriate abstract base.
-classdef ndarray < py.types.intseq
+classdef ndarray < py.types.builtin.object
     methods
         function s = size(obj, dim)
             s = double(getattr(obj, 'shape'));
@@ -24,7 +21,6 @@ classdef ndarray < py.types.intseq
             b = transpose(a);
         end
         
-        
         function m = cat(dim, varargin)
             np = pyimport('numpy');
             dim = py.int(dim-1);            
@@ -40,6 +36,5 @@ classdef ndarray < py.types.intseq
             end
         end
         
-    
     end
 end
