@@ -12,6 +12,9 @@
 
 #define PY3K_VERSION_HEX 0x3000000
 
+#define PYMEX_MATLAB_VOIDPTR "py.types.voidptr"
+#define PYMEX_MATLAB_PYOBJECT "py.types.builtin.object"
+
 /* MATLAB's matrix type library. 
    Don't necessarily want to include the full mex.h everywhere,
    but this should provide all the necessary API for MATLAB types.

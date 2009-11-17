@@ -3,15 +3,15 @@
 % give them non-integer inputs. This is annoying, since all MATLAB numbers are
 % double unless you go out of your way to cast them. This class makes things
 % more convenient.
-classdef intseq < pytypes.builtin.object
+classdef intseq < py.types.builtin.object
     methods % Overrides
         function item = getitem(obj, varargin)                
-            subs = pytypes.intseq.fixkey(varargin{:});
-            item = getitem@pytypes.builtin.object(obj, subs);
+            subs = py.types.intseq.fixkey(varargin{:});
+            item = getitem@py.types.builtin.object(obj, subs);
         end
         function setitem(obj, val, varargin)
-            subs = pytypes.intseq.fixkey(varargin{:});
-            setitem@pytypes.builtin.object(obj, val, subs);
+            subs = py.types.intseq.fixkey(varargin{:});
+            setitem@py.types.builtin.object(obj, val, subs);
         end
     end
     
@@ -31,7 +31,7 @@ classdef intseq < pytypes.builtin.object
             elseif iscell(subs)
                 % either slice or the python object will complain if this is wrong
                 subs = py.slice(subs{:});
-            elseif isa(subs, 'pytypes.builtin.object')
+            elseif isa(subs, 'py.types.builtin.object')
                 % let python determine if it's convertible to an index
                 return
             else

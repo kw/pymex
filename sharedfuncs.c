@@ -3,14 +3,14 @@
 
 mxArray* box_by_type(PyObject* pyobj) {
   static char mlname[256] = {0};
-  static char* package = "pytypes.%s.%s";
+  static char* package = "py.types.%s.%s";
   PYMEX_DEBUG("Trying to box %p\n", pyobj);
   mxArray* box = NULL;
   mxArray* mxname;
   mxArray* which;
   int ret = -1;
   if (!pyobj) {
-    ret = mexCallMATLAB(1,&box,0,NULL,"pytypes.voidptr");
+    ret = mexCallMATLAB(1,&box,0,NULL,PYMEX_MATLAB_VOIDPTR);
   }
   else {
     PyObject* type = (PyObject*) pyobj->ob_type;
@@ -57,11 +57,11 @@ mxArray* box_by_type(PyObject* pyobj) {
     Py_DECREF(mro);
     if (ret) { /* none found, use sane default */
       PYMEX_DEBUG("No reasonable box found.\n");
-      ret = mexCallMATLAB(1,&box,0,NULL,"pytypes.builtin.object");
+      ret = mexCallMATLAB(1,&box,0,NULL,PYMEX_MATLAB_PYOBJECT);
     }
   }
   if (ret || !box)
-    mexErrMsgIdAndTxt("pymex:NoBoxes","Unable to find pytypes.builtin.object");
+    mexErrMsgIdAndTxt("pymex:NoBoxes","Unable to find %s", PYMEX_MATLAB_PYOBJECT);
   PYMEX_DEBUG("Returning box\n");
   return box;
 }
@@ -123,7 +123,7 @@ bool mxIsPyObject(const mxArray* mxobj) {
   mxArray* boolobj;
   mxArray* args[2];
   args[0] = (mxArray*) mxobj;
-  args[1] = mxCreateString("pytypes.builtin.object");
+  args[1] = mxCreateString(PYMEX_MATLAB_PYOBJECT);
   mexCallMATLAB(1,&boolobj,2,args,"isa");
   mxDestroyArray(args[1]);
   return mxIsLogicalScalarTrue(boolobj);

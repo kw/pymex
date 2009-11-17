@@ -1,4 +1,4 @@
-classdef object < pytypes.voidptr
+classdef object < py.types.voidptr
   methods
       function objdir = dir(obj)
           objdir = pymex('DIR', obj);
@@ -245,10 +245,10 @@ classdef object < pytypes.voidptr
       end
       
       function disp(obj)
-          if pytypes.builtin.object.disp_info             
+          if py.types.builtin.object.disp_info             
               fprintf('%s 0x%s:\n', char(repr(type(obj))), ptrstring(obj));
           end
-          if pytypes.builtin.object.disp_repr
+          if py.types.builtin.object.disp_repr
               s = repr(obj);
           else
               s = str(obj);
@@ -360,7 +360,7 @@ classdef object < pytypes.voidptr
           % ignore dim for general object
           c = py.list();
           for i = 1:numel(varargin)
-              if ~isa(varargin{i}, 'pytypes.builtin.object')
+              if ~isa(varargin{i}, 'py.types.builtin.object')
                   if isnumeric(varargin{i})
                       varargin{i} = py.tuple(num2cell(varargin{i}));
                   else
@@ -386,13 +386,13 @@ classdef object < pytypes.voidptr
   methods (Static)
       function pyobj = loadobj(pstruct)
           if ~pstruct.pickled
-              pyobj = pytypes.voidptr;
+              pyobj = py.types.voidptr;
           else
               try
                   loads = getattr(pyimport('pickle'), 'loads');
                   pyobj = call(loads, pstruct.string);
               catch %#ok<CTCH>
-                  pyobj = pytypes.voidptr;
+                  pyobj = py.types.voidptr;
                   warning('pyobj:unpickle', 'could not load pickled object');
               end
           end
