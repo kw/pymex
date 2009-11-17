@@ -141,7 +141,7 @@ static PyObject*
 mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   static char* kwlist[] = {"fieldname", "value", "index", NULL};
-  const mxArray* ptr = mxArrayPtr(self);
+  mxArray* ptr = mxArrayPtr(self);
   if (!mxIsStruct(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
   char* fieldname;
