@@ -31,7 +31,7 @@ classdef intseq < pytypes.builtin.object
             elseif iscell(subs)
                 % either slice or the python object will complain if this is wrong
                 subs = py.slice(subs{:});
-            elseif isa(subs, 'pytypes.builtins.object')
+            elseif isa(subs, 'pytypes.builtin.object')
                 % let python determine if it's convertible to an index
                 return
             else

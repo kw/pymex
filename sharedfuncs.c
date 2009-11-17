@@ -292,7 +292,8 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
   }
   #if PYMEX_USE_NUMPY
   else if (mxIsNumeric(mxobj) || mxIsLogical(mxobj)) {
-    return PYMEX_PYARRAY_RETURN(mxArray_to_PyArray(mxobj, true));
+    PyObject* pyobj = Py_mxArray_New(mxobj, 1);
+    return PYMEX_PYARRAY_RETURN(PyArray_FromStructInterface(pyobj));
   }
   #endif
   else if (mxIsCell(mxobj)) {
@@ -311,10 +312,12 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return box(pyobj); /* Null pointer */
   else if (PyBytes_Check(pyobj))
     return PyBytes_to_mxChar(pyobj);
+  /*
   #if PYMEX_USE_NUMPY
   else if (PyArray_Check(pyobj))
     return PyArray_to_mxArray(pyobj);
   #endif
+  */
   else if (PyBool_Check(pyobj))
     return PyObject_to_mxLogical(pyobj);
   else if (PyLong_Check(pyobj) 
@@ -328,10 +331,12 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return PyObject_to_mxDouble(pyobj);
   else if (Py_mxArray_Check(pyobj))
     return mxArrayPtr(pyobj);
+  /*
   #if PYMEX_USE_NUMPY
   else if (PyArray_HasArrayInterface(pyobj, array))
     return box(array);
   #endif
+  */
   /*
   else if (PySequence_Check(pyobj))
     return PySequence_to_mxCell(pyobj);  

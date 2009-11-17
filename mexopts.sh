@@ -339,8 +339,8 @@
 #----------------------------------------------------------------------------
 #           CC="$CC"
 PYTHON=python2.6
-NUMPY_INCLUDE=
-#NUMPY_INCLUDE=-I`${PYTHON} -c 'import numpy; print(numpy.get_include());'`
+#NUMPY_INCLUDE=
+NUMPY_INCLUDE=-I`${PYTHON} -c 'import numpy; print(numpy.get_include());'`
 PY_CFLAGS=`${PYTHON}-config --cflags`
 CFLAGS="$CFLAGS $PY_CFLAGS $NUMPY_INCLUDE"
 #           COPTIMFLAGS="$COPTIMFLAGS"
