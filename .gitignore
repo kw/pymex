@@ -3,3 +3,6 @@
 *~
 .nfs*
 build/*
+*.pyc
+*.pyo
+

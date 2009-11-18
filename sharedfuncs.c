@@ -252,6 +252,23 @@ PyObject* mxCell_to_PyTuple(const mxArray* mxobj) {
   }
   return pyobj;
 }
+
+PyObject* mxCell_to_PyTuple_recursive(const mxArray* mxobj) {
+  mwSize numel = mxGetNumberOfElements(mxobj);
+  PyObject* pyobj = PyTuple_New(numel);
+  mwSize i;
+  for (i=0; i<numel; i++) {
+    mxArray* item = mxGetCell(mxobj, i);
+    PyObject* pyitem;
+    if (mxIsCell(item))
+      pyitem = mxCell_to_PyTuple_recursive(item);
+    else
+      pyitem = Any_mxArray_to_PyObject(item);
+    PyTuple_SetItem(pyobj, i, pyitem);
+  }
+  return pyobj;
+}
+
 /*
 PyObject* mxNumber_to_PyObject(const mxArray* mxobj, mwIndex index) {
   void* ptr = mxGetData(mxobj);
@@ -362,6 +379,75 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return boxb(pyobj);
 }
 
+/* TODO: Low priority, but this depends on libmex. If we try to make an
+   external module later, this will need to function to some extent.
+   It could operate at low capability by using a hardcoded list for
+   the builtins and assuming that anything else has _object as a super.
+ */
+PyObject* Calculate_matlab_mro(mxArray* mxobj) {
+  mxArray* argin[3];
+  argin[0] = mxobj;
+  argin[1] = mxCreateLogicalScalar(1); /* addvirtual=true */
+  argin[2] = mxCreateLogicalScalar(1); /* autosplit=true */
+  mxArray* argout[1] = {NULL};
+  mexSetTrapFlag(1);
+  int err = mexCallMATLAB(1, argout, 3, argin, "mro");
+  if (err) return PyErr_Format(PyExc_RuntimeError, "MATLAB error while trying to run 'mro' function.");
+  else {
+    PyObject* retval = mxCell_to_PyTuple_recursive(argout[0]);
+    mxDestroyArray(argout[0]);
+    mxDestroyArray(argin[1]);
+    mxDestroyArray(argin[2]);
+    return retval;
+  }
+}
+
+/* Attempts to locate an appropriate subclass of mx.Array using the mltypes package.
+   If for some reason this fails, mx.Array is returned instead.
+ */
+PyObject* Find_mltype_for(mxArray* mxobj) {
+  #define GET_MX_ARRAY_CLASS PyObject_GetAttrString(mxmodule, "Array")
+  PyObject *newclass, *mrolist, *mltypes, *findtype;
+  newclass = mrolist = mltypes = findtype = NULL;
+  mrolist = Calculate_matlab_mro(mxobj);
+  if (!mrolist) {
+    mexPrintf("failed to get mro list\n");
+    PyErr_Clear();
+    newclass = GET_MX_ARRAY_CLASS;
+    goto findtypes_error;
+  }
+  mltypes = PyImport_ImportModule("mltypes");
+  if (!mltypes) {
+    mexPrintf("failed to import mltypes\n");
+    PyErr_Clear();
+    newclass = GET_MX_ARRAY_CLASS;
+    goto findtypes_error;
+  }
+  findtype = PyObject_GetAttrString(mltypes, "_findtype");
+  if (!findtype) {
+    mexPrintf("failed to find _findtype\n");
+    PyErr_Clear();
+    newclass = GET_MX_ARRAY_CLASS;
+    goto findtypes_error;
+  }
+  /* I'm not sure why we need *another* tuple around this, but apparently
+     CallFunction kills the outermost tuple here */
+  mrolist = PyTuple_Pack(1, mrolist);
+  newclass = PyObject_CallFunction(findtype, "O", mrolist);
+  if (!newclass) {
+    mexPrintf("failed to call _findtype\n");
+    PyErr_Clear();
+    newclass = GET_MX_ARRAY_CLASS;
+    goto findtypes_error;
+  }
+  findtypes_error:
+  Py_XDECREF(findtype);
+  Py_XDECREF(mrolist);
+  Py_XDECREF(mltypes);
+  return newclass;
+}
+
+
 PyObject* Py_mxArray_New(mxArray* mxobj, bool duplicate) {
   mxArray* copy;
   if (duplicate) {
@@ -372,9 +458,11 @@ PyObject* Py_mxArray_New(mxArray* mxobj, bool duplicate) {
     copy = mxobj;
   }
   PyObject* mxptr = mxArrayPtr_New(copy);  
+  PyObject* arraycls = Find_mltype_for(copy);
   /* TODO: There is probably a better way to do this... */
-  PyObject* ret = PyObject_CallMethod(mxmodule, "Array", "O", mxptr);
+  PyObject* ret = PyObject_CallFunction(arraycls, "O", mxptr);
   Py_DECREF(mxptr);
+  Py_DECREF(arraycls);
   return ret;
 }
 
