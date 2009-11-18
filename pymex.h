@@ -137,8 +137,14 @@ typedef struct {
 } mxArrayObject;
 
 static inline mxArray* mxArrayPtr(PyObject* pyobj) {
-  mxArrayObject* mxobj = (mxArrayObject*) pyobj;
-  PyObject* ptr = mxobj->mxptr;
+  PyObject* ptr;
+  if (PyCObject_Check(pyobj)) {
+    ptr = pyobj;
+  }
+  else {
+    mxArrayObject* mxobj = (mxArrayObject*) pyobj;
+    ptr = mxobj->mxptr;
+  }
   if (!ptr || PyCObject_GetDesc(ptr) != mxmodule) {
     PyErr_Format(PyExc_RuntimeError, "mxptr desc does not match mxmodule");
     return NULL;
@@ -147,6 +153,7 @@ static inline mxArray* mxArrayPtr(PyObject* pyobj) {
 }
 
 static void _mxArrayPtr_destructor(void* mxobj, void* desc) {
+  Py_XDECREF((PyObject*) desc);  
   if (mxobj) mxDestroyArray((mxArray*) mxobj);
 }
 
@@ -154,6 +161,7 @@ static inline PyObject* mxArrayPtr_New(mxArray* mxobj) {
   if (!mxmodule)
     return PyErr_Format(PyExc_RuntimeError, "mxmodule not yet initialized");
   PERSIST_ARRAY(mxobj);
+  Py_INCREF(mxmodule);
   return PyCObject_FromVoidPtrAndDesc(mxobj, mxmodule, _mxArrayPtr_destructor);
 }
 

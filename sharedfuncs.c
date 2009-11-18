@@ -373,11 +373,7 @@ PyObject* Py_mxArray_New(mxArray* mxobj, bool duplicate) {
   }
   PyObject* mxptr = mxArrayPtr_New(copy);  
   /* TODO: There is probably a better way to do this... */
-  PyObject* kwargs = PyDict_New();
-  PyDict_SetItemString(kwargs, "mxpointer", mxptr);
-  PyObject* Array = PyObject_GetAttrString(mxmodule, "Array");
-  PyObject* ret = PyObject_Call(Array, NULL, kwargs);
-  Py_DECREF(kwargs);
+  PyObject* ret = PyObject_CallMethod(mxmodule, "Array", "O", mxptr);
   Py_DECREF(mxptr);
   return ret;
 }

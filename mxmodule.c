@@ -2,7 +2,82 @@
 #import "pymex.h"
 #import "structmember.h"
 
+#define DIMS_FROM_SEQ(A)						\
+  mwSize ndim = PySequence_Size(A);					\
+  mwSize dims[ndim];							\
+  mwSize i;								\
+  for (i=0; i < ndim; i++) {						\
+    PyObject* item = PySequence_GetItem(A, i);				\
+    if (!item) return NULL;						\
+    PyObject* index = PyNumber_Index(item);				\
+    Py_DECREF(item);							\
+    if (!index) return NULL;						\
+    dims[i] = (mwSize) PyLong_AsLong(index);				\
+    Py_DECREF(index);							\
+    if (PyErr_Occurred()) return NULL;					\
+    if (dims[i] < 0)							\
+      return PyErr_Format(PyExc_ValueError,				\
+			  "dims[%ld] = %ld, should be non-negative",	\
+			  (long) i, (long) dims[i]);			\
+  } if(1)
+  
+static PyObject*
+CreateCellArray(PyObject* self, PyObject* args)
+{
+  DIMS_FROM_SEQ(args);
+  mxArray* cell = mxCreateCellArray(ndim, dims);
+  mwSize numel = mxGetNumberOfElements(cell);
+  for (i=0; i<numel; i++) {
+    mxSetCell(cell, i, mxCreateDoubleMatrix(0,0, mxREAL));
+  }
+  return mxArrayPtr_New(cell);
+}
+
+static PyObject*
+CreateNumericArray(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"dims", "class", "complexity", NULL};
+  PyObject* pydims = NULL;
+  mxClassID class = mxDOUBLE_CLASS;
+  mxComplexity complexity = mxREAL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oii", kwlist, 
+				    &pydims, &class, &complexity))
+    return NULL;
+  if (!pydims) pydims = PyTuple_New(0);
+  else Py_INCREF(pydims);
+  DIMS_FROM_SEQ(pydims);
+  Py_DECREF(pydims);
+  mxArray* array = mxCreateNumericArray(ndim, dims, class, complexity);
+  return mxArrayPtr_New(array);
+}
+
+/* TODO: Allow field initialization. */
+static PyObject*
+CreateStructArray(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"dims", NULL};
+  PyObject* pydims = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist,
+				   &pydims))
+    return NULL;
+  if (!pydims) pydims = PyTuple_Pack(1, PyLong_FromLong(1));
+  else Py_INCREF(pydims);
+  DIMS_FROM_SEQ(pydims);
+  Py_DECREF(pydims);
+  mxArray* array = mxCreateStructArray(ndim, dims, 0, NULL);
+  return mxArrayPtr_New(array);
+}
+
 static PyMethodDef mx_methods[] = {
+  {"create_cell_array", CreateCellArray, METH_VARARGS,
+   "Creates a cell array with given dimensions, i.e., mx.create_cell_array(2,5,1). "
+   "Initially populated by empty matrices."},
+  {"create_numeric_array", (PyCFunction)CreateNumericArray, METH_VARARGS | METH_KEYWORDS,
+   "Creates a numeric array with given tuple of dimensions. Specify class and complexity "
+   "with one of the enum constants (defaults are mx.mxDOUBLE_CLASS and mx.mxREAL, respectively). "
+   "Example: mx.create_numeric_array((5,4,2), mx.mxDOUBLE_CLASS, mx.mxREAL)"},
+  {"create_struct_array", (PyCFunction)CreateStructArray, METH_VARARGS | METH_KEYWORDS, 
+   "Creates a struct array with no fields."},
   {NULL, NULL, 0, NULL}
 };
 
@@ -11,11 +86,10 @@ static PyMethodDef mx_methods[] = {
 static int
 mxArray_init(mxArrayObject* self, PyObject* args, PyObject* kwargs)
 {
-  if (!kwargs) {
-    PyErr_Format(PyExc_ValueError, "init must receive keyword argument: mxpointer");
+  static char* kwlist[] = {"mxpointer", NULL};
+  PyObject* mxptr;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &mxptr))
     return -1;
-  }
-  PyObject* mxptr = PyDict_GetItemString(kwargs, "mxpointer");
   if (!mxArrayPtr_Check(mxptr)) {
     PyErr_Format(PyExc_TypeError, "Input must be a valid mxArrayPtr (use mxArrayPtr_New in C to make one)");
     return -1;
@@ -241,18 +315,18 @@ mxArray_mxGetNumberOfElements(PyObject* self)
 static PyObject*
 mxArray_mxGetNumberOfDimensions(PyObject* self)
 {
-  mwSize ndims = mxGetNumberOfDimensions(mxArrayPtr(self));
-  return PyLong_FromLong(ndims);
+  mwSize ndim = mxGetNumberOfDimensions(mxArrayPtr(self));
+  return PyLong_FromLong(ndim);
 }
 
 static PyObject*
 mxArray_mxGetDimensions(PyObject* self)
 {
-  mwSize ndims = mxGetNumberOfDimensions(mxArrayPtr(self));
-  PyObject* dimtuple = PyTuple_New(ndims);
+  mwSize ndim = mxGetNumberOfDimensions(mxArrayPtr(self));
+  PyObject* dimtuple = PyTuple_New(ndim);
   const mwSize* dimarray = mxGetDimensions(mxArrayPtr(self));
   Py_ssize_t i;
-  for (i=0; i<ndims; i++) {
+  for (i=0; i<ndim; i++) {
     PyTuple_SetItem(dimtuple, i, PyLong_FromSsize_t((Py_ssize_t) dimarray[i]));
   }
   return dimtuple;
@@ -651,6 +725,25 @@ initmxmodule(void)
 
   Py_INCREF(&mxArrayType);
   PyModule_AddObject(m, "Array", (PyObject*) &mxArrayType);
+  
+  PyModule_AddIntMacro(m, mxREAL);
+  PyModule_AddIntMacro(m, mxCOMPLEX);
+  PyModule_AddIntMacro(m, mxUNKNOWN_CLASS);
+  PyModule_AddIntMacro(m, mxCELL_CLASS);
+  PyModule_AddIntMacro(m, mxSTRUCT_CLASS);
+  PyModule_AddIntMacro(m, mxLOGICAL_CLASS);
+  PyModule_AddIntMacro(m, mxCHAR_CLASS);
+  PyModule_AddIntMacro(m, mxDOUBLE_CLASS);
+  PyModule_AddIntMacro(m, mxSINGLE_CLASS);
+  PyModule_AddIntMacro(m, mxINT8_CLASS);
+  PyModule_AddIntMacro(m, mxUINT8_CLASS);
+  PyModule_AddIntMacro(m, mxINT16_CLASS);
+  PyModule_AddIntMacro(m, mxUINT16_CLASS);
+  PyModule_AddIntMacro(m, mxINT32_CLASS);
+  PyModule_AddIntMacro(m, mxUINT32_CLASS);
+  PyModule_AddIntMacro(m, mxINT64_CLASS);
+  PyModule_AddIntMacro(m, mxUINT64_CLASS);
+  PyModule_AddIntMacro(m, mxFUNCTION_CLASS);
 
   mxmodule = m;
 
