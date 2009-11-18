@@ -1,13 +1,6 @@
 #define MXMODULE
 #import "pymex.h"
-
-#if MATLAB_MEX_FILE
-#include "mex.h"
-#define PERSIST_ARRAY(A) mexMakeArrayPersistent(A)
-#else
-#define PERSIST_ARRAY(A) if (1)
-#endif
-
+#import "structmember.h"
 
 static PyMethodDef mx_methods[] = {
   {NULL, NULL, 0, NULL}
@@ -15,11 +8,27 @@ static PyMethodDef mx_methods[] = {
 
 /* libmx mxArray type */
 
-static void 
-mxArray_dealloc(PyObject* self)
+static int
+mxArray_init(mxArrayObject* self, PyObject* args, PyObject* kwargs)
 {
-  mxArray* ptr = mxArrayPtr(self);
-  if (ptr) mxDestroyArray(ptr);
+  if (!kwargs) {
+    PyErr_Format(PyExc_ValueError, "init must receive keyword argument: mxpointer");
+    return -1;
+  }
+  PyObject* mxptr = PyDict_GetItemString(kwargs, "mxpointer");
+  if (!mxArrayPtr_Check(mxptr)) {
+    PyErr_Format(PyExc_TypeError, "Input must be a valid mxArrayPtr (use mxArrayPtr_New in C to make one)");
+    return -1;
+  }
+  Py_INCREF(mxptr);
+  self->mxptr = mxptr;
+  return 0;
+}
+
+static void 
+mxArray_dealloc(mxArrayObject* self)
+{
+  Py_XDECREF(self->mxptr);
   self->ob_type->tp_free((PyObject*) self);
 }
 
@@ -437,6 +446,12 @@ static PyMethodDef mxArray_methods[] = {
   {NULL}
 };
 
+static PyMemberDef mxArray_members[] = {
+  {"_mxptr", T_OBJECT_EX, offsetof(mxArrayObject, mxptr), 0, 
+   "CObject pointer to mxArray object"},
+  {NULL}
+};
+
 #if PY_VERSION_HEX < PY3K_VERSION_HEX
 static PyNumberMethods mxArray_numbermethods = {
   0, /*binaryfunc nb_add;*/
@@ -550,14 +565,14 @@ static PyTypeObject mxArrayType = {
     0,		               /* tp_iter */
     0,		               /* tp_iternext */
     mxArray_methods,             /* tp_methods */
-    0,                        /* tp_members */
+    mxArray_members,                        /* tp_members */
     mxArray_getseters,        /* tp_getset */
     0,                         /* tp_base */
     0,                         /* tp_dict */
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    0,                         /* tp_init */
+    (initproc)mxArray_init,                         /* tp_init */
     0,                         /* tp_alloc */
     0,                        /* tp_new */
 };
@@ -592,14 +607,14 @@ static PyTypeObject mxArrayType = {
     0,		               /* tp_iter */
     0,		               /* tp_iternext */
     mxArray_methods,             /* tp_methods */
-    0,                        /* tp_members */
+    mxArray_members,                        /* tp_members */
     mxArray_getseters,           /* tp_getset */
     0,                         /* tp_base */
     0,                         /* tp_dict */
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    0,                         /* tp_init */
+    (initproc)mxArray_init,                         /* tp_init */
     0,                         /* tp_alloc */
     0,                         /* tp_new */
 };

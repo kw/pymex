@@ -238,5 +238,5 @@ PYMEX(RUN_SIMPLE_STRING, 1, 1, {
   })
 
 PYMEX(PYBOX, 1, 1, {
-    plhs[0] = box(Py_mxArray_New(prhs[0], 1));
+    plhs[0] = box(Py_mxArray_New((mxArray*) prhs[0], 1));
   })

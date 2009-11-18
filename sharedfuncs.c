@@ -347,7 +347,7 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
     return mxChar_to_PyBytes(mxobj);
   }
   else {
-    return Py_mxArray_New(mxobj,1);
+    return Py_mxArray_New((mxArray*) mxobj,1);
   }
 }
 
@@ -362,21 +362,24 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return boxb(pyobj);
 }
 
-PyObject* Py_mxArray_New(const mxArray* mxobj, bool duplicate) {
+PyObject* Py_mxArray_New(mxArray* mxobj, bool duplicate) {
   mxArray* copy;
   if (duplicate) {
     copy = mxDuplicateArray(mxobj);
     mexMakeArrayPersistent(copy);
   }
   else {
-    copy = (mxArray*) mxobj;
+    copy = mxobj;
   }
-  if (!mxmodule)
-    mexErrMsgTxt("Uh oh, no mxmodule?");
+  PyObject* mxptr = mxArrayPtr_New(copy);  
   /* TODO: There is probably a better way to do this... */
-  mxArrayObject* newptr = (mxArrayObject*) PyObject_CallMethod(mxmodule, "Array", NULL);
-  newptr->mxptr = copy;
-  return (PyObject*) newptr;
+  PyObject* kwargs = PyDict_New();
+  PyDict_SetItemString(kwargs, "mxpointer", mxptr);
+  PyObject* Array = PyObject_GetAttrString(mxmodule, "Array");
+  PyObject* ret = PyObject_Call(Array, NULL, kwargs);
+  Py_DECREF(kwargs);
+  Py_DECREF(mxptr);
+  return ret;
 }
 
 int Py_mxArray_Check(PyObject* pyobj) {

@@ -21,6 +21,13 @@
 */
 #include <matrix.h>
 
+#if MATLAB_MEX_FILE
+#include "mex.h"
+#define PERSIST_ARRAY(A) mexMakeArrayPersistent(A)
+#else
+#define PERSIST_ARRAY(A) if (1)
+#endif
+
 #ifndef PYMEX_DEBUG_FLAG
 #define PYMEX_DEBUG_FLAG 0
 #endif
@@ -80,7 +87,7 @@ mxArray* PyObject_to_mxLong(PyObject* pyobj);
 PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj);
 mxArray* Any_PyObject_to_mxArray(PyObject* pyobj);
 bool PyMXObj_Check(PyObject* pyobj);
-PyObject* Py_mxArray_New(const mxArray* mxobj, bool duplicate);
+PyObject* Py_mxArray_New(mxArray* mxobj, bool duplicate);
 int Py_mxArray_Check(PyObject* pyobj);
 PyObject* mxArray_to_PyArray(const mxArray* mxobj, bool duplicate);
 mxArray* PyArray_to_mxArray(PyObject* pyobj);
@@ -95,38 +102,63 @@ char mxClassID_to_Numpy_Typekind(mxClassID mxclass);
 #ifndef MEXMODULE
 extern PyObject* mexmodule;
 #else
-PyObject* mexmodule;
+PyObject* mexmodule = NULL;
 #endif
 
 #ifndef MXMODULE
 extern PyObject* mxmodule;
 #else
-PyObject* mxmodule;
+PyObject* mxmodule = NULL;
 #endif
 
 #ifndef MATLABMODULE
 extern PyObject* matlabmodule;
 #else
-PyObject* matlabmodule;
+PyObject* matlabmodule = NULL;
 #endif
 
 #ifndef MATMODULE
 extern PyObject* matmodule;
 #else
-PyObject* matmodule;
+PyObject* matmodule = NULL;
 #endif
 
 #ifndef ENGMODULE
 extern PyObject* engmodule;
 #else
-PyObject* engmodule;
+PyObject* engmodule = NULL;
 #endif
 
-#define mxArrayPtr(pyobj) ((mxArray*) ((mxArrayObject*)pyobj)->mxptr)
+
 
 typedef struct {
     PyObject_HEAD
-    mxArray* mxptr;
+    PyObject* mxptr;
 } mxArrayObject;
+
+static inline mxArray* mxArrayPtr(PyObject* pyobj) {
+  mxArrayObject* mxobj = (mxArrayObject*) pyobj;
+  PyObject* ptr = mxobj->mxptr;
+  if (!ptr || PyCObject_GetDesc(ptr) != mxmodule) {
+    PyErr_Format(PyExc_RuntimeError, "mxptr desc does not match mxmodule");
+    return NULL;
+  }
+  return (mxArray*) PyCObject_AsVoidPtr(ptr);
+}
+
+static void _mxArrayPtr_destructor(void* mxobj, void* desc) {
+  if (mxobj) mxDestroyArray((mxArray*) mxobj);
+}
+
+static inline PyObject* mxArrayPtr_New(mxArray* mxobj) {
+  if (!mxmodule)
+    return PyErr_Format(PyExc_RuntimeError, "mxmodule not yet initialized");
+  PERSIST_ARRAY(mxobj);
+  return PyCObject_FromVoidPtrAndDesc(mxobj, mxmodule, _mxArrayPtr_destructor);
+}
+
+static inline int mxArrayPtr_Check(PyObject* obj) {
+  return (obj && PyCObject_Check(obj) && PyCObject_GetDesc(obj) == mxmodule);
+}
 
 #endif
