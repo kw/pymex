@@ -1,8 +1,48 @@
 #include "pymex.h"
 #include <mex.h>
 
+/*
+  FIXME: Most of these shared functions were developed before the Python-side
+  of the bridge had its foundations. They throw MATLAB errors with appropriate
+  messages. This is probably suboptimal if the caller is from the Python side
+  of the bridge. Need to make the errors generic, or possibly just use Python
+  exceptions. That sounds good, actually.
+*/
+
+
+/*
+  box_by_type - Given a python object, will arrange for a MATLAB object
+  of an appropriate type to be instantiated to hold the pointer. To allow
+  the user to customize the object's MATLAB-side behavior, a hierarchy of
+  MATLAB packages and classes exists in the +py/+types directory. The 
+  PyObject's type is asked for its method resolution order to determine
+  what order to check for MATLAB-equivalent classes. 
+
+  The hierarchy should look something like py.types.modulename.classname.
+  I haven't played around with more deeply nested structures, so that's
+  a potential source of problems - we may need to check the __package__
+  attribute as well. 
+
+  Naturally, names must be normalized to obey MATLAB naming conventions.
+  Presently the only thing done to enforce this is to strip underscores from
+  both ends of the module name. 
+
+  In the event that nothing in the type's mro list matches the available
+  wrapper classes, py.types.builtin.object is used even if this type does
+  not descend from object. If we were passed a NULL, we happily wrap it
+  with py.types.voidptr, the base class of our wrapper hierarchy.
+
+  Note that the only requirement on the wrapper is that running 'which'
+  on 'py.types.modulename.classname' returns something, and that the indicated
+  thing can be called with no arguments. So it may be a class, or it may be a
+  simple m-function that returns a class instance. 
+
+  box_by_type doesn't actually insert the PyObject's pointer into the result,
+  it just instantiates the MATLAB wrapper. 
+*/
+#define MAX_MXTYPE_NAME_SIZE 512
 mxArray* box_by_type(PyObject* pyobj) {
-  static char mlname[256] = {0};
+  static char mlname[MAX_MXTYPE_NAME_SIZE] = {0};
   static char* package = "py.types.%s.%s";
   PYMEX_DEBUG("Trying to box %p\n", pyobj);
   mxArray* box = NULL;
@@ -16,6 +56,12 @@ mxArray* box_by_type(PyObject* pyobj) {
     PyObject* type = (PyObject*) pyobj->ob_type;
     PyObject* mro;
     if (PyType_Check(pyobj)) {
+      /* Calling type on a type gives us back type, and
+	 calling mro on type doesn't work quite the same,
+	 so we special case this one. We don't actually have
+	 a wrapper type to wrap type, but if we did, it would.
+	 Yo dawg.
+      */
       PYMEX_DEBUG("Object is a type...\n");
       mro = Py_BuildValue("(O)", &PyType_Type);
     }
@@ -39,7 +85,7 @@ mxArray* box_by_type(PyObject* pyobj) {
       PyObject* modname = PyObject_GetAttrString(item, "__module__");
       PyObject* cleanmodname = PyObject_CallMethod(modname, "strip", "s", "_");
       PyObject* name = PyObject_GetAttrString(item, "__name__");
-      snprintf(mlname, 256, package, PyBytes_AsString(cleanmodname), PyBytes_AsString(name));
+      snprintf(mlname, MAX_MXTYPE_NAME_SIZE, package, PyBytes_AsString(cleanmodname), PyBytes_AsString(name));
       PYMEX_DEBUG("Checking for %s...\n", mlname);
       Py_DECREF(name);
       Py_DECREF(cleanmodname);
@@ -60,8 +106,11 @@ mxArray* box_by_type(PyObject* pyobj) {
       ret = mexCallMATLAB(1,&box,0,NULL,PYMEX_MATLAB_PYOBJECT);
     }
   }
-  if (ret || !box)
-    mexErrMsgIdAndTxt("pymex:NoBoxes","Unable to find %s", PYMEX_MATLAB_PYOBJECT);
+  if (ret || !box) {
+    PYMEX_DEBUG("Unable to find " PYMEX_MATLAB_PYOBJECT);
+    PyErr_Format(PyExc_RuntimeError,"Unable to find %s", PYMEX_MATLAB_PYOBJECT);
+    return NULL;
+  }
   PYMEX_DEBUG("Returning box\n");
   return box;
 }
@@ -70,16 +119,15 @@ mxArray* box_by_type(PyObject* pyobj) {
 mxArray* box (PyObject* pyobj) {
   mxArray* boxed = NULL;
   if (!pyobj) {
-    PYMEX_DEBUG("Attempted to box null object.");
+    PYMEX_DEBUG("Boxing null object.");
   }
   boxed = box_by_type(pyobj);
-  if (pyobj) {
-    mexLock();
-    mxArray* ptr_field = mxGetProperty(boxed, 0, "pointer");
-    void** ptr = mxGetData(ptr_field);
-    *ptr = (void*) pyobj;
-    mxSetProperty(boxed, 0, "pointer", ptr_field);
-  }
+  if (!boxed) return NULL;
+  if (pyobj) mexLock();
+  mxArray* ptr_field = mxGetProperty(boxed, 0, "pointer");
+  void** ptr = mxGetData(ptr_field);
+  *ptr = (void*) pyobj;
+  mxSetProperty(boxed, 0, "pointer", ptr_field);
   return boxed;
 }
 
@@ -91,9 +139,10 @@ mxArray* boxb (PyObject* pyobj) {
 
 /* Unboxes an object, returning a borrowed reference */
 PyObject* unbox (const mxArray* mxobj) {  
+  if (!mxobj) return PyErr_Format(PyExc_RuntimeError, "Can't unbox from null pointer");
   if (mxIsPyNull(mxobj)) {
-    PYMEX_DEBUG("Attempt to unbox null object.");
-    return NULL;
+    PYMEX_DEBUG("Unboxed a null object.");
+    return PyErr_Format(PyExc_RuntimeError, "Unboxed pointer is null.");
   }
   else {
     void** ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
@@ -114,22 +163,29 @@ PyObject* unboxn (const mxArray* mxobj) {
   return pyobj;
 }
 
+/* Returns true if the wrapper's pointer is NULL. 
+   Only pass it voidptr (and subclasses thereof), as
+   it does not check this before doing the mxGetProperty
+ */
 bool mxIsPyNull (const mxArray* mxobj) {
   void** ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
   return !*ptr;
 }
 
+/* Asks the MATLAB interpreter if the object isa subclass of voidptr.
+   This includes null pointers and things not descended from object.
+ */
 bool mxIsPyObject(const mxArray* mxobj) {
   mxArray* boolobj;
   mxArray* args[2];
   args[0] = (mxArray*) mxobj;
-  args[1] = mxCreateString(PYMEX_MATLAB_PYOBJECT);
+  args[1] = mxCreateString(PYMEX_MATLAB_VOIDPTR);
   mexCallMATLAB(1,&boolobj,2,args,"isa");
   mxDestroyArray(args[1]);
   return mxIsLogicalScalarTrue(boolobj);
 }
 
-PyObject* mxChar_to_PyString(const mxArray* mxchar) {
+PyObject* mxChar_to_PyBytes(const mxArray* mxchar) {
   if (!mxchar || !mxIsChar(mxchar))
     mexErrMsgTxt("Input isn't a mxChar");
   char* tempstring = mxArrayToString(mxchar);
@@ -138,29 +194,29 @@ PyObject* mxChar_to_PyString(const mxArray* mxchar) {
   PyObject* pystr = PyBytes_FromString(tempstring);
   mxFree(tempstring);
   if (!pystr)
-    mexErrMsgTxt("Couldn't convert from string to PyString");
+    mexErrMsgTxt("Couldn't convert from string to PyBytes");
   return pystr;
 }
 
 mxArray* PyBytes_to_mxChar(PyObject* pystr) {
   if (!pystr || !PyBytes_Check(pystr))
-    mexErrMsgTxt("Input isn't a PyString");
+    mexErrMsgTxt("Input isn't a PyBytes");
   char* tempstring = PyBytes_AsString( pystr);
   mxArray* mxchar = mxCreateString(tempstring);
   return mxchar;
 }
 
 mxArray* PyObject_to_mxChar(PyObject* pyobj) {
-  mxArray* mxchar;
   if (pyobj) {
     PyObject* pystr = PyObject_Str(pyobj);
-    mxchar = PyBytes_to_mxChar(pystr);
+    mxArray* mxchar = PyBytes_to_mxChar(pystr);
     Py_DECREF(pystr);
+    return mxchar;
   } 
   else {
-    mxchar = mxCreateString("<NULL>");
+    PyErr_Format(PyExc_RuntimeError, "Can't convert NULL to string");
+    return NULL;
   }
-  return mxchar;
 }
 
 mxArray* PyObject_to_mxLogical(PyObject* pyobj) {
@@ -288,16 +344,7 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
     return pyobj;
   }
   else if (mxIsChar(mxobj)) {
-    return mxChar_to_PyString(mxobj);
-  }
-  #if PYMEX_USE_NUMPY
-  else if (mxIsNumeric(mxobj) || mxIsLogical(mxobj)) {
-    PyObject* pyobj = Py_mxArray_New(mxobj, 1);
-    return PYMEX_PYARRAY_RETURN(PyArray_FromStructInterface(pyobj));
-  }
-  #endif
-  else if (mxIsCell(mxobj)) {
-    return mxCell_to_PyTuple(mxobj);
+    return mxChar_to_PyBytes(mxobj);
   }
   else {
     return Py_mxArray_New(mxobj,1);
@@ -305,42 +352,12 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
 }
 
 mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
-  #if PYMEX_USE_NUMPY
-  PyObject* array = NULL;
-  #endif
   if (!pyobj)
     return box(pyobj); /* Null pointer */
   else if (PyBytes_Check(pyobj))
     return PyBytes_to_mxChar(pyobj);
-  /*
-  #if PYMEX_USE_NUMPY
-  else if (PyArray_Check(pyobj))
-    return PyArray_to_mxArray(pyobj);
-  #endif
-  */
-  else if (PyBool_Check(pyobj))
-    return PyObject_to_mxLogical(pyobj);
-  else if (PyLong_Check(pyobj) 
-  #if PY_VERSION_HEX < 0x02050000
-	   /* Py3k has no ints, by 2.6 still does. */
-	   || PyInt_Check(pyobj)
-  #endif
-	   )
-    return PyObject_to_mxLong(pyobj);
-  else if (PyFloat_Check(pyobj))
-    return PyObject_to_mxDouble(pyobj);
   else if (Py_mxArray_Check(pyobj))
     return mxArrayPtr(pyobj);
-  /*
-  #if PYMEX_USE_NUMPY
-  else if (PyArray_HasArrayInterface(pyobj, array))
-    return box(array);
-  #endif
-  */
-  /*
-  else if (PySequence_Check(pyobj))
-    return PySequence_to_mxCell(pyobj);  
-  */
   else
     return boxb(pyobj);
 }
@@ -444,6 +461,7 @@ mxArray* PyObject_to_mxLong(PyObject* pyobj) {
 
 
 #if PYMEX_USE_NUMPY
+/* There is likely some problem with these conversions. Try not to use this. */
 int mxClassID_to_PyArrayType(mxClassID mxclass) {
   switch (mxclass) {
   case mxLOGICAL_CLASS: return NPY_BOOL;

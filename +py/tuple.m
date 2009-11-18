@@ -1,3 +1,3 @@
 function t = tuple(varargin)
 tuple = pybuiltins('tuple');
-t = tuple(varargin);
+t = tuple(pymex('CELL_TO_TUPLE', varargin));

@@ -29,7 +29,7 @@ PYMEX(GET_BUILTINS, 0,0, {
 PYMEX(IMPORT, 1,1, {
     if (!mxIsChar(prhs[0]))
       mexErrMsgTxt("import argument not string.");
-    PyObject* name = mxChar_to_PyString(prhs[0]);
+    PyObject* name = mxChar_to_PyBytes(prhs[0]);
     PyObject* pyobj = PyImport_Import(name);
     Py_DECREF(name);
     plhs[0] = box(pyobj);
@@ -138,14 +138,6 @@ PYMEX(TO_PYOBJECT, 1,1, {
     plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
   })
 
-PYMEX(TO_LIST, 1,1, {
-    plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
-  })
-
-PYMEX(TO_TUPLE, 1,1, {
-    plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
-  })
-
 PYMEX(AS_DOUBLE,1,1, {
     plhs[0] = PyObject_to_mxDouble(unbox(prhs[0]));
   })
@@ -222,6 +214,13 @@ PYMEX(IS_INSTANCE, 2,2, {
     plhs[0] = 
       mxCreateLogicalScalar(PyObject_IsInstance(unbox(prhs[0]),
 						Any_mxArray_to_PyObject(prhs[1])));
+  })
+
+PYMEX(CELL_TO_TUPLE, 1,1, {
+    if (!mxIsCell(prhs[0]))
+      mexErrMsgIdAndTxt("pymex:NotCell", "This command only converts cells to tuples.");
+    else
+      plhs[0] = box(mxCell_to_PyTuple(prhs[0]));
   })
 
 PYMEX(TO_MXARRAY, 1,1, {

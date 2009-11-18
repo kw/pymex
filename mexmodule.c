@@ -138,6 +138,11 @@ initmexmodule(void)
   #endif
 
   mexmodule = m;
+  
+  PyObject* sys = PyImport_AddModule("sys");
+  PyObject* path = PyObject_GetAttrString(sys, "path");
+  PyObject* pymexpath = PyObject_CallMethod(m, "eval", "s", "fileparts(which('pymex'));");
+  if (PyList_Append(path, pymexpath) < 0) PyErr_Clear();
 
   #if PY_VERSION_HEX >= PY3K_VERSION_HEX
   return m;
