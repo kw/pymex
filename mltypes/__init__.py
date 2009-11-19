@@ -56,14 +56,24 @@ class struct(mx.Array):
     def __setattr__(self, key, val):
         self[key] = val
     def __getitem__(self, key):
-        ind = 0
         if isinstance(key, tuple):
-            (ind, key) = key
-        return self.get_field(key, index=ind)
+            (ind, field) = key
+            return self.get_field(field, index=ind)
+        elif isinstance(key, str):
+            return [self.get_field(key, index=ind) for ind in range(len(self))]
+        elif not(isinstance(key, str)):
+            ind = int(key)
+            return dict((f,self[ind,f]) for f in keys(self))
+        else:
+            raise KeyError, "I'm not sure what you want me to do with a key of type %s" % type(key)
     def __setitem__(self, key, val):
-        ind = 0
         if isinstance(key, tuple):
             (ind, key) = key
+        else:
+            # FIXME: Because I'm tired...
+            raise KeyError, "For the moment you'll have to set one index+field at a time: self[ind, field] = foo"
         self.set_field(key, val, index=ind)
     def __len__(self):
         return self.get_number_of_elements()
+    def __keys__(self):
+        return self.get_fields()
