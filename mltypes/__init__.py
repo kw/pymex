@@ -37,8 +37,9 @@ class cell(mx.Array):
             ind = self.calc_single_subscript(*ind)
         elif isinstance(ind, slice):
             raise KeyError, "slicing not yet supported"
+        ind = int(ind) # mxArray doesn't do comparisons yet...
         if ind > len(self):
-            raise KeyError, "linear index out of bounds"
+            raise KeyError, "linear index out of bounds: %d > %d" % (ind, len(self))
         return ind
     def __getitem__(self, ind):
         ind = self._check_dims(ind)
