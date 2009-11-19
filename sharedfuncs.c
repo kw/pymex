@@ -689,3 +689,36 @@ char mxClassID_to_Numpy_Typekind(mxClassID mxclass) {
   default: return 'V';
   }
 }
+
+mxArray* mxArrayPtr(PyObject* pyobj) {
+  PyObject* ptr;
+  if (PyCObject_Check(pyobj)) {
+    ptr = pyobj;
+  }
+  else {
+    mxArrayObject* mxobj = (mxArrayObject*) pyobj;
+    ptr = mxobj->mxptr;
+  }
+  if (!ptr || PyCObject_GetDesc(ptr) != mxmodule) {
+    PyErr_Format(PyExc_RuntimeError, "mxptr desc does not match mxmodule");
+    return NULL;
+  }
+  return (mxArray*) PyCObject_AsVoidPtr(ptr);
+}
+
+static void _mxArrayPtr_destructor(void* mxobj, void* desc) {
+  Py_XDECREF((PyObject*) desc);  
+  if (mxobj) mxDestroyArray((mxArray*) mxobj);
+}
+
+PyObject* mxArrayPtr_New(mxArray* mxobj) {
+  if (!mxmodule)
+    return PyErr_Format(PyExc_RuntimeError, "mxmodule not yet initialized");
+  PERSIST_ARRAY(mxobj);
+  Py_INCREF(mxmodule);
+  return PyCObject_FromVoidPtrAndDesc(mxobj, mxmodule, _mxArrayPtr_destructor);
+}
+
+int mxArrayPtr_Check(PyObject* obj) {
+  return (obj && PyCObject_Check(obj) && PyCObject_GetDesc(obj) == mxmodule);
+}

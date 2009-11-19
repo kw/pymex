@@ -146,7 +146,7 @@ static PyObject*
 mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   static char* kwlist[] = {"fieldname","index", NULL};
-  const mxArray* ptr = mxArrayPtr(self);
+  mxArray* ptr = mxArrayPtr(self);
   if (!mxIsStruct(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
   char* fieldname;
@@ -160,6 +160,12 @@ mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
   if (mxGetFieldNumber(mxArrayPtr(self), fieldname) < 0)
     return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field.", fieldname);
   mxArray* item = mxGetField(ptr, (mwIndex) index, fieldname);
+  if (!item) {
+    item = mxCreateDoubleMatrix(0,0,mxREAL);
+    PERSIST_ARRAY(item);
+    mxSetField(ptr, (mwIndex) index, fieldname, item);
+    item = mxGetField(ptr, (mwIndex) index, fieldname);
+  }
   return Any_mxArray_to_PyObject(item);
 }
 
@@ -175,7 +181,7 @@ static PyObject*
 mxArray_mxGetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   static char* kwlist[] = {"propname","index", NULL};
-  const mxArray* ptr = mxArrayPtr(self);
+  mxArray* ptr = mxArrayPtr(self);
   char* propname;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
@@ -194,7 +200,7 @@ static PyObject*
 mxArray_mxGetCell(PyObject* self, PyObject* args)
 {
   long index = 0;
-  const mxArray* ptr = mxArrayPtr(self);
+  mxArray* ptr = mxArrayPtr(self);
   if (!mxIsCell(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
   if (!PyArg_ParseTuple(args, "l", &index))
@@ -203,6 +209,12 @@ mxArray_mxGetCell(PyObject* self, PyObject* args)
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
   mxArray* item = mxGetCell(ptr, (mwIndex) index);
+  if (!item) {
+    item = mxCreateDoubleMatrix(0,0,mxREAL);
+    PERSIST_ARRAY(item);
+    mxSetCell(ptr, (mwIndex) index, item);
+    item = mxGetCell(ptr, (mwIndex) index);
+  }
   return Any_mxArray_to_PyObject(item);
 }
 
