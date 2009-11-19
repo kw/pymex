@@ -78,3 +78,10 @@ class struct(mx.Array):
         return self._get_number_of_elements()
     def __keys__(self):
         return self._get_fields()
+
+class _numeric(mx.Array):
+    def __cmp__(self, other):
+        # probably good enough for now...
+        floatval = float(self)
+        return cmp(floatval, other)
+
