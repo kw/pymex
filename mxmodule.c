@@ -128,13 +128,16 @@ mxArray_mxCalcSingleSubscript(PyObject* self, PyObject* args)
   mwSize len = (mwIndex) PySequence_Length(args);
   mwSize dims = mxGetNumberOfDimensions(mxobj);
   if (len > dims) {
-    return PyErr_Format(PyExc_IndexError, "Can't calculated %ld-dimensional subscripts for %ld-dimensional array",
+    return PyErr_Format(PyExc_IndexError, "Can't calculate %ld-dimensional subscripts for %ld-dimensional array",
 			(long) len, (long) dims);
   }
   mwIndex subs[len];
   mwIndex i;
-  for (i=0; i<len; i++)
-    subs[i] = (mwIndex) PyLong_AsLong(PyTuple_GetItem(args, (Py_ssize_t) i));
+  for (i=0; i<len; i++) {
+    PyObject* ind = PyNumber_Index(PyTuple_GetItem(args, (Py_ssize_t) i));
+    if (PyErr_Occurred()) return NULL;
+    subs[i] = (mwIndex) PyLong_AsLong(ind);
+  }
   return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
 }
 

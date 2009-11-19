@@ -113,11 +113,11 @@ classdef object < py.types.voidptr
       
       function item = getitem(obj, varargin)
           if numel(varargin) > 1
-              key = varargin;
+              key = py.tuple(varargin{:});
           elseif numel(varargin) == 1
               key = varargin{1};
           else
-              key = {};
+              key = py.tuple();
           end
           item = pymex('GET_ITEM', obj, key);
       end
@@ -132,11 +132,11 @@ classdef object < py.types.voidptr
       
       function setitem(obj, val, varargin)
           if numel(varargin) > 1
-              key = varargin;
+              key = py.tuple(varargin{:});
           elseif numel(varargin) == 1
               key = varargin{1};
           else
-              key = {};
+              key = py.tuple();
           end
           pymex('SET_ITEM', obj, key, val);
       end
