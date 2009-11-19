@@ -160,7 +160,7 @@ PYMEX(CALL, 2,3, {
 	mexErrMsgIdAndTxt("python:NoKWargs", "kwargs must be a dict or null");
     }
     PyObject* result = PyObject_Call(callobj, args, kwargs);
-    plhs[0] = Any_PyObject_to_mxArray(result);
+    plhs[0] = box(result);
   })
 
 PYMEX(IS_CALLABLE, 1,1, {

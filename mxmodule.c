@@ -86,12 +86,13 @@ static PyMethodDef mx_methods[] = {
 static int
 mxArray_init(mxArrayObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"mxpointer", NULL};
-  PyObject* mxptr;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &mxptr))
+  PyObject* mxptr = PyDict_GetItemString(kwargs, "mxpointer");
+  if (!mxptr) {
+    PyErr_Format(PyExc_ValueError, "Failed to build mx.Array wrapper: need mxpointer keyword argument.");
     return -1;
+  }
   if (!mxArrayPtr_Check(mxptr)) {
-    PyErr_Format(PyExc_TypeError, "Input must be a valid mxArrayPtr (use mxArrayPtr_New in C to make one)");
+    PyErr_Format(PyExc_TypeError, "mxpointer must be a valid mxArrayPtr");
     return -1;
   }
   Py_INCREF(mxptr);
@@ -411,8 +412,9 @@ static PyObject* mxArray_repr_helper(PyObject* self) {
 
 static PyObject* mxArray_str_helper(PyObject* self) {
   #if MATLAB_MEX_FILE
+  static char newline[] = {10, 0};
   PyObject* rawstring = PyObject_CallMethod(mexmodule, "call", "sO", "any2str", self);
-  PyObject* stringval = PyObject_CallMethod(rawstring, "strip", "");
+  PyObject* stringval = PyObject_CallMethod(rawstring, "strip", "s", newline);
   Py_DECREF(rawstring);
   return stringval;
   #else

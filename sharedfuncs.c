@@ -457,10 +457,15 @@ PyObject* Py_mxArray_New(mxArray* mxobj, bool duplicate) {
   else {
     copy = mxobj;
   }
-  PyObject* mxptr = mxArrayPtr_New(copy);  
+  PyObject* mxptr = mxArrayPtr_New(copy);
+  PyObject* args = PyTuple_New(0);
+  PyObject* kwargs = PyDict_New();
+  PyDict_SetItemString(kwargs, "mxpointer", mxptr);
   PyObject* arraycls = Find_mltype_for(copy);
   /* TODO: There is probably a better way to do this... */
-  PyObject* ret = PyObject_CallFunction(arraycls, "O", mxptr);
+  PyObject* ret = PyObject_Call(arraycls, args, kwargs);
+  Py_DECREF(args);
+  Py_DECREF(kwargs);
   Py_DECREF(mxptr);
   Py_DECREF(arraycls);
   return ret;

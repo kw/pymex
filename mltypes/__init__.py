@@ -19,6 +19,10 @@ def _findtype(typelist):
 
 
 class cell(mx.Array):
+    def __init__(self, dims=(1,1), mxpointer=None):
+        if mxpointer is None:
+            mxpointer = mx.create_cell_array(*dims)
+        super(cell, self).__init__(mxpointer=mxpointer)
     def _check_dims(self, ind):
         if isinstance(ind, tuple):
             if any(map(lambda a: isinstance(a, slice), ind)):
@@ -50,8 +54,12 @@ class cell(mx.Array):
     def __len__(self):
         return self._get_number_of_elements()
 
-
+# FIXME: struct still only supports linear indexing
 class struct(mx.Array):
+    def __init__(self, dims=(1,1), mxpointer=None):
+        if mxpointer is None:
+            mxpointer = mx.create_struct_array(dims)
+        super(struct, self).__init__(mxpointer=mxpointer)
     def __getattr__(self, key):
         return self[key]
     def __setattr__(self, key, val):
@@ -64,7 +72,7 @@ class struct(mx.Array):
             return [self._get_field(key, index=ind) for ind in range(len(self))]
         elif not(isinstance(key, str)):
             ind = int(key)
-            return dict((f,self[ind,f]) for f in keys(self))
+            return dict((f,self[ind,f]) for f in self._get_fields())
         else:
             raise KeyError, "I'm not sure what you want me to do with a key of type %s" % type(key)
     def __setitem__(self, key, val):
@@ -76,8 +84,6 @@ class struct(mx.Array):
         self._set_field(key, val, index=ind)
     def __len__(self):
         return self._get_number_of_elements()
-    def __keys__(self):
-        return self._get_fields()
 
 class _numeric(mx.Array):
     def __cmp__(self, other):
