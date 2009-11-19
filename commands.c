@@ -170,7 +170,7 @@ PYMEX(IS_CALLABLE, 1,1, {
 PYMEX(GET_ATTR, 2,2, {
     PyObject* pyobj = unbox(prhs[0]);
     PyObject* name = unboxn(prhs[1]);
-    plhs[0] = Any_PyObject_to_mxArray(PyObject_GetAttr(pyobj, name));
+    plhs[0] = box(PyObject_GetAttr(pyobj, name));
     Py_XDECREF(name);
   })
 
@@ -193,7 +193,7 @@ PYMEX(HAS_ATTR, 2, 2, {
 PYMEX(GET_ITEM, 2,2, {
     PyObject* pyobj = unbox(prhs[0]);
     PyObject* key = unboxn(prhs[1]);
-    plhs[0] = Any_PyObject_to_mxArray(PyObject_GetItem(pyobj, key));
+    plhs[0] = box(PyObject_GetItem(pyobj, key));
     Py_XDECREF(key);
   })
 
