@@ -24,7 +24,7 @@ class cell(mx.Array):
             if any(map(lambda a: isinstance(a, slice), ind)):
                 raise KeyError, "slicing not yet supported"
             numinds = len(ind)
-            dims = self.get_dimensions()
+            dims = self._get_dimensions()
             if numinds > len(dims): 
                 raise KeyError, "too many dimensions"
             elif numinds < len(dims):
@@ -34,7 +34,7 @@ class cell(mx.Array):
             if any(map(lambda a,b: b <= long(a), ind, dims)):
                 raise KeyError, "at least one index out of bounds"
             # all seems well, so calc the real index
-            ind = self.calc_single_subscript(*ind)
+            ind = self._calc_single_subscript(*ind)
         elif isinstance(ind, slice):
             raise KeyError, "slicing not yet supported"
         ind = int(ind) # mxArray doesn't do comparisons yet...
@@ -43,12 +43,12 @@ class cell(mx.Array):
         return ind
     def __getitem__(self, ind):
         ind = self._check_dims(ind)
-        return self.get_cell(ind)
+        return self._get_cell(ind)
     def __setitem__(self, ind, val):
         ind = self._check_dims(ind)
-        self.set_cell(ind, val)
+        self._set_cell(ind, val)
     def __len__(self):
-        return self.get_number_of_elements()
+        return self._get_number_of_elements()
 
 
 class struct(mx.Array):
@@ -59,9 +59,9 @@ class struct(mx.Array):
     def __getitem__(self, key):
         if isinstance(key, tuple):
             (ind, field) = key
-            return self.get_field(field, index=ind)
+            return self._get_field(field, index=ind)
         elif isinstance(key, str):
-            return [self.get_field(key, index=ind) for ind in range(len(self))]
+            return [self._get_field(key, index=ind) for ind in range(len(self))]
         elif not(isinstance(key, str)):
             ind = int(key)
             return dict((f,self[ind,f]) for f in keys(self))
@@ -73,8 +73,8 @@ class struct(mx.Array):
         else:
             # FIXME: Because I'm tired...
             raise KeyError, "For the moment you'll have to set one index+field at a time: self[ind, field] = foo"
-        self.set_field(key, val, index=ind)
+        self._set_field(key, val, index=ind)
     def __len__(self):
-        return self.get_number_of_elements()
+        return self._get_number_of_elements()
     def __keys__(self):
-        return self.get_fields()
+        return self._get_fields()
