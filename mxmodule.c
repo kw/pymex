@@ -22,14 +22,18 @@
   } if(1)
   
 static PyObject*
-CreateCellArray(PyObject* self, PyObject* args)
+CreateCellArray(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  DIMS_FROM_SEQ(args);
+  static char* kwlist[] = {"dims", NULL};
+  PyObject* pydims = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist,
+				   &pydims))
+    return NULL;
+  if (!pydims) pydims = PyTuple_New(0);
+  else Py_INCREF(pydims);
+  DIMS_FROM_SEQ(pydims);
+  Py_DECREF(pydims);
   mxArray* cell = mxCreateCellArray(ndim, dims);
-  mwSize numel = mxGetNumberOfElements(cell);
-  for (i=0; i<numel; i++) {
-    mxSetCell(cell, i, mxCreateDoubleMatrix(0,0, mxREAL));
-  }
   return mxArrayPtr_New(cell);
 }
 
@@ -69,7 +73,7 @@ CreateStructArray(PyObject* self, PyObject* args, PyObject* kwargs)
 }
 
 static PyMethodDef mx_methods[] = {
-  {"create_cell_array", CreateCellArray, METH_VARARGS,
+  {"create_cell_array", (PyCFunction)CreateCellArray, METH_VARARGS | METH_KEYWORDS,
    "Creates a cell array with given dimensions, i.e., mx.create_cell_array(2,5,1). "
    "Initially populated by empty matrices."},
   {"create_numeric_array", (PyCFunction)CreateNumericArray, METH_VARARGS | METH_KEYWORDS,
@@ -142,7 +146,6 @@ mxArray_mxCalcSingleSubscript(PyObject* self, PyObject* args)
   return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
 }
 
-/* TODO: Allow multiple subscript indexing */
 static PyObject*
 mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
@@ -177,6 +180,9 @@ mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
    valid properties), if you try to access a property but have insufficient rights (also no way of
    checking that from C), or if an error occurs in the property's accessor function.
    Should probably use subsref/subsasgn instead. 
+
+   UPDATE: Apparently this is fixed in 2009b, but with some change to the API of some sort.
+   I do not have this version. I did notice that on my 2009a machine no SIGABRT was signaled. Odd.
 */
 static PyObject*
 mxArray_mxGetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
@@ -219,23 +225,6 @@ mxArray_mxGetCell(PyObject* self, PyObject* args)
   return Any_mxArray_to_PyObject(item);
 }
 
-/* helper function, initializes a new field of a struct. */
-static int mxAddField_AndInit(mxArray* obj, const char* fieldname, mxArray* fillval) {
-  if (!fillval) fillval = mxCreateDoubleMatrix(0,0,mxREAL);
-  mwSize len = mxGetNumberOfElements(obj);
-  mwIndex i;
-  int fieldnum = mxAddField(obj, fieldname);
-  if (fieldnum < 0) return fieldnum;
-  for (i=0; i<len; i++) {
-    mxArray* nextval = mxDuplicateArray(fillval);
-    PERSIST_ARRAY(nextval); 
-    mxSetFieldByNumber(obj, i, fieldnum, nextval);
-  }
-  return fieldnum;
-}
-
-/* TODO: Struct resizing */
-/* TODO: Allow multiple subscript indexing */
 static PyObject*
 mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
 {
@@ -253,7 +242,7 @@ mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
   if (mxGetFieldNumber(ptr, fieldname) < 0)
-    if (mxAddField_AndInit((mxArray*) ptr, fieldname, NULL) < 0)
+    if (mxAddField(ptr, fieldname) < 0)
       return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field, and could not create it.", fieldname);
   mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue)); /*FIXME: This probably leaks when the input isn't already an mxArray, since the returned object is new but never freed */
   PERSIST_ARRAY(mxvalue);

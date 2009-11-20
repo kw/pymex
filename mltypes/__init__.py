@@ -21,7 +21,7 @@ def _findtype(typelist):
 class cell(mx.Array):
     def __init__(self, dims=(1,1), mxpointer=None):
         if mxpointer is None:
-            mxpointer = mx.create_cell_array(*dims)
+            mxpointer = mx.create_cell_array(dims)
         super(cell, self).__init__(mxpointer=mxpointer)
     def _check_dims(self, ind):
         if isinstance(ind, tuple):
@@ -90,4 +90,5 @@ class _numeric(mx.Array):
         # probably good enough for now...
         floatval = float(self)
         return cmp(floatval, other)
+
 
