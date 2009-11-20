@@ -92,3 +92,18 @@ class _numeric(mx.Array):
         return cmp(floatval, other)
 
 
+class function_handle(mx.Array):
+    def __init__(self, name=None, closure=None, mxpointer=None):
+        if mxpointer is None:
+            if name and closure:
+                raise ValueError, "Specify name OR closure"
+            elif name:
+                mxpointer = mx.create_function_handle(name=name)
+            elif closure:
+                mxpointer = mx.create_function_handle(closure=closure)
+            else:
+                raise ValueError, "Must specify a function name or MATLAB closure literal"
+        super(function_handle, self).__init__(mxpointer=mxpointer)
+    def __call__(self, *args, **kwargs):
+        return mex.call(self, *args, **kwargs)
+

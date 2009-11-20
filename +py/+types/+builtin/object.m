@@ -117,7 +117,7 @@ classdef object < py.types.voidptr
           elseif numel(varargin) == 1
               key = varargin{1};
           else
-              key = py.tuple();
+              key = py.tuple;
           end
           item = pymex('GET_ITEM', obj, key);
       end
@@ -291,7 +291,7 @@ classdef object < py.types.voidptr
           end
       end      
       
-      function varargout = subsref(obj, S)
+      function varargout = subsref(obj, S)          
           out = obj;
           subs = S(1).subs;
           switch S(1).type
@@ -312,10 +312,24 @@ classdef object < py.types.voidptr
           end
           if numel(S) > 1
               out = subsref(out, S(2:end));
-          end          
-          if ~(nargout == 0 && is(pybuiltins('None'), out))
+          end
+          if nargout == 1 || (nargout == 0 && ~is(pybuiltins('None'), out))
               varargout{1} = out;
-          end                  
+          elseif nargout > 1
+              iter = pybuiltins('iter');
+              iterobj = call(iter, out);
+              for i=1:nargout
+                  try
+                      varargout{i} = methodcall(iterobj, 'next');
+                  catch ME
+                      if strcmp(ME.identifier, 'Python:StopIteration')
+                         break
+                      else
+                          rethrow(ME);
+                      end
+                  end
+              end
+          end
       end
                
       function obj = subsasgn(obj, S, val)

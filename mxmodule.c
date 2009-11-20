@@ -72,6 +72,73 @@ CreateStructArray(PyObject* self, PyObject* args, PyObject* kwargs)
   return mxArrayPtr_New(array);
 }
 
+static PyObject*
+CreateCharArray(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"dims", NULL};
+  PyObject* pydims = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist,
+				   &pydims))
+    return NULL;
+  if (!pydims) pydims = PyTuple_New(0);
+  else Py_INCREF(pydims);
+  DIMS_FROM_SEQ(pydims);
+  Py_DECREF(pydims);
+  mxArray* array = mxCreateCharArray(ndim, dims);
+  return mxArrayPtr_New(array);
+}
+
+static PyObject*
+CreateString(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"string", NULL};
+  char* string = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist,
+				   &string))
+    return NULL;
+  mxArray* array = mxCreateString((const char*) string);
+  return mxArrayPtr_New(array);
+}
+
+static PyObject*
+CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char* kwlist[] = {"name", "closure", NULL};
+  char* name = NULL;
+  char* closure = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ss", kwlist,
+				   &name, &closure))
+    return NULL;
+  PyObject* evalstring;
+  if (name && closure)
+    return PyErr_Format(PyExc_ValueError, "Provide a function name OR a closure, not both.");
+  else if (name)
+    evalstring = PyBytes_FromFormat("@%s;", name);
+  else if (closure)
+    evalstring = PyBytes_FromFormat("%s;", closure);
+  else
+    return PyErr_Format(PyExc_ValueError, "Must provide a string containing a name or a MATLAB closure.");
+  #if MATLAB_MEX_FILE
+  mxArray* argin[3];
+  mxArray* argout[1];
+  argin[0] = mxCreateString("evalin");
+  argin[1] = mxCreateString("base");
+  argin[2] = mxCreateString(PyBytes_AsString(evalstring));
+  int err = mexCallMATLAB(1,argout, 3, argin, "feval");
+  int i;
+  for (i=0; i<3; i++) mxDestroyArray(argin[i]);
+  Py_DECREF(evalstring);
+  if (err) /* TODO: Get some code to translate MATLAB errors. */
+    return PyErr_Format(PyExc_RuntimeError, "Bad function handle or something");
+  if (mxGetClassID(argout[0]) != mxFUNCTION_CLASS)
+    return PyErr_Format(PyExc_ValueError, "Returned value was not a function handle?");  
+  return mxArrayPtr_New(argout[0]);
+  #else
+  Py_DECREF(evalstring);
+  return PyErr_Format(PyExc_RuntimeError, "Function handles can't presently be instantiated outside of MATLAB.");
+  #endif
+}
+
 static PyMethodDef mx_methods[] = {
   {"create_cell_array", (PyCFunction)CreateCellArray, METH_VARARGS | METH_KEYWORDS,
    "Creates a cell array with given dimensions, i.e., mx.create_cell_array(2,5,1). "
@@ -82,6 +149,14 @@ static PyMethodDef mx_methods[] = {
    "Example: mx.create_numeric_array((5,4,2), mx.mxDOUBLE_CLASS, mx.mxREAL)"},
   {"create_struct_array", (PyCFunction)CreateStructArray, METH_VARARGS | METH_KEYWORDS, 
    "Creates a struct array with no fields."},
+  {"create_char_array", (PyCFunction)CreateCharArray, METH_VARARGS | METH_KEYWORDS,
+   "Creates a character array with the given dimensions."},
+  {"create_string", (PyCFunction)CreateString, METH_VARARGS | METH_KEYWORDS,
+   "Creates a character array from the given string."},
+  {"create_function_handle", (PyCFunction)CreateFunctionHandle, METH_VARARGS | METH_KEYWORDS,
+   "If called with name='somefunc', returns a handle to that function. "
+   "If called with closure='@(x) x+1', returns a MATLAB lambda function. "
+   "Note that closures created this way are closed over the current base workspace."},
   {NULL, NULL, 0, NULL}
 };
 
