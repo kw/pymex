@@ -1,14 +1,6 @@
 #ifndef PYMEX_HELPERS_INCLUDED
 #define PYMEX_HELPERS_INCLUDED
 #include <Python.h>
-#if PYMEX_USE_NUMPY
- #ifndef PY_ARRAY_UNIQUE_SYMBOL
-  #define PY_ARRAY_UNIQUE_SYMBOL PYMEX_ARRAY_API
-  #define NO_IMPORT_ARRAY
-  #define NPY_USE_PYMEM 1
-  #include <numpy/arrayobject.h>
- #endif
-#endif 
 
 #define PY3K_VERSION_HEX 0x3000000
 

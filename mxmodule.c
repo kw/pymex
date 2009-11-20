@@ -435,7 +435,6 @@ mxArray_repr(PyObject* self)
 }
 
 /* This definition shamelessly copied from NumPy to remove dependence on it for building. */
-#if !PYMEX_USE_NUMPY
 typedef struct {
   int two;              /* contains the integer 2 -- simple sanity check */
   int nd;               /* number of dimensions */
@@ -456,7 +455,7 @@ typedef struct {
 #define NPY_NOTSWAPPED    0x0200
 #define NPY_WRITEABLE     0x0400
 #define NPY_ARR_HAS_DESCR  0x0800
-#endif
+/* end things copied from NumPy */
 
 static void numpy_array_struct_destructor(void* ptr, void* desc)
 {

@@ -1,10 +1,5 @@
 #include <Python.h>
 #include "structmember.h"
-#if PYMEX_USE_NUMPY
- #define PY_ARRAY_UNIQUE_SYMBOL PYMEX_ARRAY_API
- #define NPY_USE_PYMEM 1
- #include <numpy/arrayobject.h>
-#endif
 #define MATLABMODULE
 #include "pymex.h"
 
@@ -35,11 +30,6 @@ initmatlabmodule(void)
   #else
   PyObject* m = PyModule_Create(&matlabmodule_def);
   if (!m) return NULL;
-  #endif
-
-  #if PYMEX_USE_NUMPY
-  /* numpy C-API import */
-  import_array();
   #endif
 
   matlabmodule = m;

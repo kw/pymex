@@ -11,7 +11,7 @@ all: ${TARGET}
 
 ${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h mexopts.sh .debug_${DEBUG}
 	$(MEX) $(MEXFLAGS) \
-	-DPYMEX_DEBUG_FLAG=${DEBUG} -DPYMEX_USE_NUMPY=0 pymex.c sharedfuncs.c *module.c
+	-DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c sharedfuncs.c *module.c
 
 .debug_0:
 	@echo "Debug disabled."

@@ -63,14 +63,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     PYMEX_DEBUG("[python: initialized]\n");
     initmatlabmodule();
     mexAtExit(ExitFcn);
-    #ifdef PYMEX_USE_NUMPY
-    /* FIXME
-       To temporarily deal with the reloading problem,
-       here's a mexLock that is never released. You can
-       release it manually with pymex('MEXUNLOCK') if
-       you'd like, of course. Good luck with that. */
-    mexLock();
-    #endif
   }
   mexSetTrapFlag(1);
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
