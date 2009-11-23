@@ -205,7 +205,12 @@ classdef object < py.types.voidptr
       end
       
       function n = double(obj)
-          n = pymex('AS_DOUBLE',obj);
+          v = unpy(obj);
+          if ~isa(v, 'py.types.builtin.object')
+              n = double(v);
+          else
+              error('py:double', 'Don''t know how to convert this to a double.')
+          end
       end
       
       function n = single(obj)
@@ -213,7 +218,12 @@ classdef object < py.types.voidptr
       end
       
       function n = int64(obj)
-          n = pymex('AS_LONG',obj);
+          v = unpy(obj);
+          if ~isa(v, 'py.types.builtin.object')
+              n = double(v);
+          else
+              error('py:int64', 'Don''t know how to conver this to a long.')
+          end
       end
       
       function n = uint64(obj)

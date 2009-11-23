@@ -138,14 +138,6 @@ PYMEX(TO_PYOBJECT, 1,1, {
     plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
   })
 
-PYMEX(AS_DOUBLE,1,1, {
-    plhs[0] = PyObject_to_mxDouble(unbox(prhs[0]));
-  })
-
-PYMEX(AS_LONG,1,1, {
-    plhs[0] = PyObject_to_mxLong(unbox(prhs[0]));
-  })
-
 PYMEX(CALL, 2,3, {
     PyObject* callobj = unbox(prhs[0]);
     if (!PyCallable_Check(callobj))

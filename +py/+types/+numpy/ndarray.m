@@ -27,6 +27,23 @@ classdef ndarray < py.types.builtin.object
             m = np.concatenate(varargin, dim);
         end
         
+        function v = unpy(self)            
+            shape = unpy(getattr(self,'shape'));
+            typestr = unpy(getattr(getattr(self,'dtype'), 'name'));
+            if strcmp(typestr, 'float64'), typestr = 'double';
+            elseif strcmp(typestr, 'float32'), typestr = 'single';
+            elseif strcmp(typestr, '|S0'), typestr = 'char';
+            elseif ismember(typestr, {'int8', 'uint8', 'int16', 'uint16', ...
+                    'int32', 'uint32', 'int64', 'uint64'}), typestr = typestr;
+            else
+                error('numpy:UnhandledType', 'Not sure how to convert type %s', typestr);
+            end
+            newarray = py.asarray(feval(typestr, zeros(shape{:})));
+            e = py.Ellipsis;
+            setitem(newarray, self, e);
+            v = unpy(getattr(newarray, 'base'));
+        end
+        
         function e = end(obj, k, n)
             s = size(obj);
             if k > numel(s)

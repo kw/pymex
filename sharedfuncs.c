@@ -211,10 +211,6 @@ mxArray* PyObject_to_mxChar(PyObject* pyobj) {
   }
 }
 
-mxArray* PyObject_to_mxLogical(PyObject* pyobj) {
-  return mxCreateLogicalScalar(PyObject_IsTrue(pyobj));
-}
-
 PyObject* mxCell_to_PyTuple(const mxArray* mxobj) {
   mwSize numel = mxGetNumberOfElements(mxobj);
   PyObject* pyobj = PyTuple_New(numel);
@@ -274,6 +270,18 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return box(pyobj); /* Null pointer */
   else if (PyBytes_Check(pyobj))
     return PyBytes_to_mxChar(pyobj);
+  else if (PyTuple_Check(pyobj) || PyList_Check(pyobj))
+    return PySequence_to_mxCell(pyobj);
+  else if (PyLong_Check(pyobj)
+	   #if PY_VERSION_HEX < PY3K_VERSION_HEX
+	   || PyInt_Check(pyobj)
+	   #endif
+	   )
+    return PyObject_to_mxLong(pyobj);
+  else if (PyFloat_Check(pyobj))
+    return PyObject_to_mxDouble(pyobj);
+  else if (PyBool_Check(pyobj))
+    return PyObject_to_mxLogical(pyobj);
   else if (Py_mxArray_Check(pyobj))
     return mxArrayPtr(pyobj);
   else
@@ -377,58 +385,27 @@ int Py_mxArray_Check(PyObject* pyobj) {
 }
 
 mxArray* PyObject_to_mxDouble(PyObject* pyobj) {
-  if (PySequence_Check(pyobj)) {
-    Py_ssize_t len = PySequence_Length(pyobj);
-    mxArray* mxval = mxCreateDoubleMatrix(1, len, mxREAL);
-    mexMakeArrayPersistent(mxval);
-    mwIndex i;
-    double* ptr = (double*) mxGetData(mxval);
-    PyObject* item;
-    for (i=0; i<len; i++) {
-      item = PySequence_ITEM(pyobj, i);
-      ptr[i] = PyFloat_AsDouble(item);
-      if (PyErr_Occurred()) return NULL;
-      Py_DECREF(item);
-    }
-    return mxval;
-  }
-  else {
-    double val = PyFloat_AsDouble(pyobj);
-    if (PyErr_Occurred()) return NULL;
-    mxArray* mxval = mxCreateDoubleScalar(val);
-    mexMakeArrayPersistent(mxval);
-    return mxval;
-  }
+  double val = PyFloat_AsDouble(pyobj);
+  if (PyErr_Occurred()) return NULL;
+  mxArray* mxval = mxCreateDoubleScalar(val);
+  PERSIST_ARRAY(mxval);
+  return mxval;
 }
 
 mxArray* PyObject_to_mxLong(PyObject* pyobj) {
-  if (PySequence_Check(pyobj)) {
-    Py_ssize_t len = PySequence_Length(pyobj);
-    mxArray* mxval = mxCreateNumericMatrix(1, len, mxINT64_CLASS, mxREAL);
-    mexMakeArrayPersistent(mxval);
-    mwIndex i;
-    long* ptr = (long*) mxGetData(mxval);
-    PyObject* item;
-    for (i=0; i<len; i++) {
-      item = PySequence_ITEM(pyobj, i);
-      ptr[i] = PyLong_AsLong(item);
-      if (PyErr_Occurred()) return NULL;
-      Py_DECREF(item);
-    }
-    return mxval;
-  }
-  else {
-    double val = PyLong_AsLong(pyobj);
-    if (PyErr_Occurred()) return NULL;
-    /* there is no mxCreateNumericScalar */
-    mxArray* mxval = mxCreateNumericMatrix(1, 1, mxINT64_CLASS, mxREAL);
-    mexMakeArrayPersistent(mxval);
-    long* ptr = (long*) mxGetData(mxval);
-    ptr[0] = val;
-    return mxval;
-  }
+  long val = PyLong_AsLong(pyobj);
+  if (PyErr_Occurred()) return NULL;
+  /* there is no mxCreateNumericScalar */
+  mxArray* mxval = mxCreateNumericMatrix(1, 1, mxINT64_CLASS, mxREAL);
+  PERSIST_ARRAY(mxval);
+  long* ptr = (long*) mxGetData(mxval);
+  ptr[0] = val;
+  return mxval;
 }
 
+mxArray* PyObject_to_mxLogical(PyObject* pyobj) {
+  return mxCreateLogicalScalar(PyObject_IsTrue(pyobj));
+}
 
 char mxClassID_to_Numpy_Typekind(mxClassID mxclass) {
   switch (mxclass) {
