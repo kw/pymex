@@ -9,7 +9,7 @@
 #define PYMEX_SIG(name) \
 void name##_pymexfun(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
-#define PYMEX_DEFINE(name, min, max, body)				\
+#define PYMEX_DEFINE(name, min, max, doc, body)				\
   PYMEX_SIG(name) {							\
     PYMEX_DEBUG("<start " #name ">\n");					\
     if (nrhs < min || nrhs > max) {					\
@@ -20,25 +20,31 @@ void name##_pymexfun(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     PYMEX_DEBUG("<end " #name ">\n");					\
   }
 
-#define PYMEX_MAKECELL(name, min, max, body)	\
+#define PYMEX_MAKECELL(name, min, max, doc, body)	\
   mxSetCell(plhs[0], PYMEX_CMD_##name, mxCreateString(#name));
 
-#define PYMEX_STRCMP(name, min, max, body)		\
+#define PYMEX_GETDOC(name, min, max, doc, body)\
+  else if (!strcmp(#name, helpname)) {	       \
+    mxFree(helpname);			       \
+    plhs[0] = mxCreateString(doc);	       \
+  }
+
+#define PYMEX_STRCMP(name, min, max, doc, body)		\
   else if (!strcmp(#name, cmdstring)) {			\
     mxFree(cmdstring);					\
     name##_pymexfun(nlhs, plhs, nrhs-1, prhs+1);	\
   }
 
-#define PYMEX_ENUM(name, min, max, body)	\
+#define PYMEX_ENUM(name, min, max, doc, body)	\
   PYMEX_CMD_##name,
   
-#define PYMEX_CASE(name, min, max, body)		\
+#define PYMEX_CASE(name, min, max, doc, body)		\
   case PYMEX_CMD_##name:				\
   name##_pymexfun(nlhs, plhs, nrhs-1, prhs+1);		\
   break;
 
 /* Define pymex command enums via x-macro */
-#define PYMEX(name, min, max, body) PYMEX_ENUM(name,min,max,body)
+#define PYMEX(name, min, max, doc, body) PYMEX_ENUM(name,min,max,doc,body)
 enum PYMEX_COMMAND {
 #include XMACRO_DEFS
   NUMBER_OF_PYMEX_COMMANDS,
@@ -46,7 +52,7 @@ enum PYMEX_COMMAND {
 #undef PYMEX
 
 /* Define pymex commands via x-macro */
-#define PYMEX(name, min, max, body) PYMEX_DEFINE(name,min,max,body)
+#define PYMEX(name, min, max, doc, body) PYMEX_DEFINE(name,min,max,doc,body)
 #include XMACRO_DEFS
 #undef PYMEX
 
@@ -67,10 +73,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   mexSetTrapFlag(1);
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
     if (nlhs == 1) {
-      plhs[0] = mxCreateCellMatrix(1,NUMBER_OF_PYMEX_COMMANDS);
-#define PYMEX(name,min,max,body) PYMEX_MAKECELL(name,min,max,body)
+      plhs[0] = mxCreateCellMatrix(1,NUMBER_OF_PYMEX_COMMANDS+1);
+#define PYMEX(name,min,max,doc,body) PYMEX_MAKECELL(name,min,max,doc,body)
 #include XMACRO_DEFS
 #undef PYMEX
+      mxSetCell(plhs[0], NUMBER_OF_PYMEX_COMMANDS, mxCreateString("help"));
     } 
     else {
       mexEvalString("help('pymex.m')");
@@ -78,10 +85,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
   else if (mxIsNumeric(prhs[0])) {
     enum PYMEX_COMMAND cmd = (int) mxGetScalar(prhs[0]);
-
+    /* While the numeric command selector is no longer used
+       for various reasons, I have left it in since it is
+       faster than the string-based command selector and
+       could theoretically be useful in the future.
+     */
     /* Switch body defined via x-macro expansion */
     switch (cmd) {
-#define PYMEX(name,min,max,body) PYMEX_CASE(name,min,max,body)
+#define PYMEX(name,min,max,doc,body) PYMEX_CASE(name,min,max,doc,body)
 #include XMACRO_DEFS
 #undef PYMEX
     default:
@@ -91,9 +102,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   else if (mxIsChar(prhs[0])) {
     char* cmdstring = mxArrayToString(prhs[0]);
     if (!cmdstring) {
-      mexErrMsgIdAndTxt("pymex:badstring", "Could not extract the command string for some reason.");
-    } /* a bunch of else-ifs are generated here */
-#define PYMEX(name,min,max,body) PYMEX_STRCMP(name,min,max,body)
+      mexErrMsgIdAndTxt("pymex:badstring", 
+			"Could not extract the command string for some reason.");    
+    } 
+    else if (!strcmp("help", cmdstring)) {
+      if (nrhs < 2 || !mxIsChar(prhs[1])) {
+	mexErrMsgIdAndTxt("pymex:nohelp", "Please specify a PYMEX command to get help for it.");
+      }
+      char* helpname = mxArrayToString(prhs[1]);
+      if (!helpname) {
+	mexErrMsgIdAndTxt("pymex:badstring", 
+			  "Could not extract the command string for some reason.");
+      }
+      else if (!strcmp(helpname, "help")) {
+	plhs[0] = mxCreateString("Given the name of another PYMEX command, "
+				 "produces its docstring.");
+      }
+#define PYMEX(name,min,max,doc,body) PYMEX_GETDOC(name,min,max,doc,body)
+#include XMACRO_DEFS
+#undef PYMEX
+      else {
+	mexErrMsgIdAndTxt("pymex:nohelp", 
+			  "No command '%s' found. Commands are case sensitive.", helpname);
+      }
+      mxFree(cmdstring);      
+    }
+/* a bunch of else-ifs are generated here */    
+#define PYMEX(name,min,max,doc,body) PYMEX_STRCMP(name,min,max,doc,body)
 #include XMACRO_DEFS
 #undef PYMEX
     else {
@@ -107,7 +142,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
   }
   else {
-    mexErrMsgIdAndTxt("pymex:badcmd", "I don't really know what to do with a %s", mxGetClassName(prhs[0]));
+    mexErrMsgIdAndTxt("pymex:badcmd", "I don't really know what to do with a %s", 
+		      mxGetClassName(prhs[0]));
   }
 
   /* Detect and pass on python errors */
