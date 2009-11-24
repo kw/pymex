@@ -1,3 +1,6 @@
+/* Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+   For full license details, see the LICENSE file. */
+
 #ifndef PYMEX_HELPERS_INCLUDED
 #define PYMEX_HELPERS_INCLUDED
 #include <Python.h>

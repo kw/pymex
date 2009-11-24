@@ -18,3 +18,7 @@ function varargout = pymex(varargin) %#ok<STOUT>
 % To modify the list of commands, edit commands.c and recompile.
 
 error('pymex:NotBuilt','You must first build pymex.%s using the makefile.', mexext);
+
+% Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+% For full license details, see the LICENSE file.
+

@@ -1,3 +1,6 @@
+/* Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+   For full license details, see the LICENSE file. */
+
 #define MXMODULE
 #import "pymex.h"
 #import "structmember.h"

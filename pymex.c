@@ -1,5 +1,10 @@
-/* The pymex kernel. See commands.c for kernel commands, or do `c = pymex` for a list. */
-/* FIXME: Make pymex and its related python modules GIL aware. See also mexmodule.c for discussion about a 'MIL'. */
+/* Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+   For full license details, see the LICENSE file. */
+
+/* The pymex kernel. See commands.c for kernel commands, 
+   or do `c = pymex` for a list. */
+/* FIXME: Make pymex and its related python modules GIL aware. 
+   See also mexmodule.c for discussion about a 'MIL'. */
 #include "pymex.h"
 #include <mex.h>
 #define XMACRO_DEFS "commands.c"
@@ -96,23 +101,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 #include XMACRO_DEFS
 #undef PYMEX
     default:
-      mexErrMsgIdAndTxt("pymex:NotImplemented", "pymex command %d not implemented", cmd);
+      mexErrMsgIdAndTxt("pymex:NotImplemented", 
+			"pymex command %d not implemented", cmd);
     }
   }
   else if (mxIsChar(prhs[0])) {
     char* cmdstring = mxArrayToString(prhs[0]);
     if (!cmdstring) {
       mexErrMsgIdAndTxt("pymex:badstring", 
-			"Could not extract the command string for some reason.");    
+			"Could not extract the command string.");    
     } 
     else if (!strcmp("help", cmdstring)) {
       if (nrhs < 2 || !mxIsChar(prhs[1])) {
-	mexErrMsgIdAndTxt("pymex:nohelp", "Please specify a PYMEX command to get help for it.");
+	mexErrMsgIdAndTxt("pymex:nohelp", 
+			  "Please specify a PYMEX command to get help for it.");
       }
       char* helpname = mxArrayToString(prhs[1]);
       if (!helpname) {
 	mexErrMsgIdAndTxt("pymex:badstring", 
-			  "Could not extract the command string for some reason.");
+			  "Could not extract the command string.");
       }
       else if (!strcmp(helpname, "help")) {
 	plhs[0] = mxCreateString("Given the name of another PYMEX command, "
@@ -123,7 +130,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 #undef PYMEX
       else {
 	mexErrMsgIdAndTxt("pymex:nohelp", 
-			  "No command '%s' found. Commands are case sensitive.", helpname);
+			  "No command '%s' found. Commands are case sensitive.",
+			  helpname);
       }
       mxFree(cmdstring);      
     }
@@ -132,17 +140,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 #include XMACRO_DEFS
 #undef PYMEX
     else {
-      mexErrMsgIdAndTxt("pymex:NotImplemented", "pymex command '%s' not implemented", cmdstring);
+      mexErrMsgIdAndTxt("pymex:NotImplemented", 
+			"pymex command '%s' not implemented", cmdstring);
       /* mxFree(cmdstring) */
-      /* We'd like to free it, but this won't run. Hopefully MATLAB's magic memory manager
-         will handle this for us. If not, this shouldn't be a memory leak. Unless someone decides
-         to write code that calls pymex directly, misspells the command string, catchs and ignores
-         the error, and then somehow doesn't notice that whatever they're doing isn't working.
+      /* We'd like to free it, but this won't run. 
+	 Hopefully MATLAB's magic memory manager
+         will handle this for us. If not, this shouldn't 
+	 be a memory leak. Unless someone decides
+         to write code that calls pymex directly, misspells 
+	 the command string, catchs and ignores
+         the error, and then somehow doesn't notice that 
+	 whatever they're doing isn't working.
       */
     }
   }
   else {
-    mexErrMsgIdAndTxt("pymex:badcmd", "I don't really know what to do with a %s", 
+    mexErrMsgIdAndTxt("pymex:badcmd", 
+		      "I don't really know what to do with a %s", 
 		      mxGetClassName(prhs[0]));
   }
 
@@ -153,7 +167,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     PyErr_Fetch(&err_type, &err_value, &err_traceback);
     if (!err_value)
       err_value = PyUnicode_FromString("<no value>");
-    /* FIXME: This seems a tad overcomplicated for some simple string concatentaion. */
+    /* FIXME: This seems a tad overcomplicated for some 
+       simple string concatentaion. */
     PyObject* pyid = PyUnicode_FromString("Python:"); 
     PyObject* errname = PyObject_GetAttrString(err_type, "__name__");
     PyObject* msgid = PyUnicode_Concat(pyid, errname);

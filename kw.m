@@ -34,8 +34,9 @@ classdef kw
                 d{kwargs(i).keyword} = kwargs(i).value;
             end
         end
-    end
-    
-    
+    end    
 end
  
+% Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+% For full license details, see the LICENSE file.
+

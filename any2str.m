@@ -18,3 +18,7 @@ catch %#ok
     out = sprintf('<%s instance (undisplayable)>', class(arg));
   end
 end
+
+% Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+% For full license details, see the LICENSE file.
+

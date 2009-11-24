@@ -8,3 +8,7 @@ if numel(val) == 1
 else
     v = py.array(val, 'bool');
 end
+
+% Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+% For full license details, see the LICENSE file.
+

@@ -1,3 +1,6 @@
+/* Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+   For full license details, see the LICENSE file. */
+
 /* This module is a placeholder - eventually, MATLAB's libmat 
    (for reading MATLAB's "mat" file format) should get an interface here. */
 #define MATMODULE

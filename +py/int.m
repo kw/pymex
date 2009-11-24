@@ -9,3 +9,6 @@ else
     v = py.array(val, 'int');
 end
 
+% Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+% For full license details, see the LICENSE file.
+

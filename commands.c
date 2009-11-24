@@ -1,3 +1,6 @@
+/* Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+   For full license details, see the LICENSE file. */
+
 /* format is:
 PYMEX(NAME, minimum_number_of_args, maximum_number_of_args, docstring, { function body} )
 */
