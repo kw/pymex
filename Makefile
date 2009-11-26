@@ -1,17 +1,24 @@
-MATLAB ?= $(shell matlab -e | grep MATLAB= | sed s/^MATLAB=//)
+PYTHON ?= python2.6
+MATLAB_SCRIPT ?= matlab
+TMW_ROOT ?= $(shell ${MATLAB_SCRIPT} -e | grep MATLAB= | sed s/^MATLAB=//)
+
+CFLAGS=$(shell ${PYTHON}-config --cflags)
+CLIBS=$(shell ${PYTHON}-config --libs)
+LDFLAGS=$(shell ${PYTHON}-config --ldflags) -L$(shell ${PYTHON}-config --prefix)/lib
+
+MEXEXT ?= $(shell ${TMW_ROOT}/bin/mexext)
 
 DEBUG ?= $(if $(wildcard .debug_1),1,0)
+TARGET = pymex.${MEXEXT}
 
-TARGET = $(word 1, $(wildcard pymex.mex*) pymex.mex)
-
-MEXFLAGS=
-MEX=${MATLAB}/bin/mex -f ./mexopts.sh
+MEXFLAGS ?= 
+MEXENV = CFLAGS="\$$CFLAGS ${CFLAGS}" CLIBS="\$$CLIBS ${CLIBS}" LDFLAGS="\$$LDFLAGS ${LDFLAGS}"
+MEX = ${TMW_ROOT}/bin/mex 
 
 all: ${TARGET}
 
-${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h mexopts.sh .debug_${DEBUG}
-	$(MEX) $(MEXFLAGS) \
-	-DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c sharedfuncs.c *module.c
+${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h .debug_${DEBUG}
+	$(MEX) $(MEXFLAGS) $(MEXENV) -DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c sharedfuncs.c *module.c
 
 .debug_0:
 	@echo "Debug disabled."
@@ -27,3 +34,4 @@ ${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h mexopts.sh .debug_
 
 clean:
 	rm -f .debug_* pymex.mex*
+
