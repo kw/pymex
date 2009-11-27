@@ -1,19 +1,25 @@
+'''
+Pymex Utility module
+This module is primarily for internal use, though users
+who need to modify some behaviors (particularly with type conversion)
+might want to have a look-see. 
+'''
+
 import matlab.mx as mx
 
-_unpy_registry = dict()
-
+__unpy_registry = dict()
 def register_unpy(cls, func):
     '''
     Provide a function to convert members of the
     given class to (or towards) mxArray. See 'unpy'.
     '''
-    _unpy_registry[cls] = func
+    __unpy_registry[cls] = func
 
 def unregister_unpy(cls):
     '''
     Remove a registered converter function.
     '''
-    del _unpy_registry[cls]
+    del __unpy_registry[cls]
     
 def unpy(obj):
     '''
@@ -32,23 +38,23 @@ def unpy(obj):
     except: pass
     # Check if class is registered
     for cls in type(obj).mro():
-            if cls in _unpy_registry:
-                return _unpy_registry[cls](obj)
+            if cls in __unpy_registry:
+                return __unpy_registry[cls](obj)
     raise NotImplementedError
 
 ## Some sample unpy stuff for numpy 
 try: 
     import numpy as np
 
-    _dtype_map = None
+    __dtype_map = None
     def select_mxclass_by_dtype(dtype):
         '''
         Tries to select an appropriate mxclass.
         Doesn't handle complex dtypes.
         '''
-        global _dtype_map
-        if _dtype_map is None:
-            _dtype_map = {
+        global __dtype_map
+        if __dtype_map is None:
+            __dtype_map = {
                 np.float64 : mx.mxDOUBLE_CLASS,
                 np.float32 : mx.mxSINGLE_CLASS,
                 np.int64 : mx.mxINT64_CLASS,
@@ -63,7 +69,7 @@ try:
                 np.character : mx.mxCHAR_CLASS,
                 }
         # First handle the common cases
-        try: return _dtype_map[dtype]
+        try: return __dtype_map[dtype]
         except: pass
         # Make a vague attempt at providing something appropriate
         if issubclass(dtype, np.floating): return mx.mxDOUBLE_CLASS
