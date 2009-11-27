@@ -287,8 +287,18 @@ mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
     return PyObject_to_mxLogical(pyobj);
   else if (Py_mxArray_Check(pyobj))
     return mxArrayPtr(pyobj);
-  else
+  else {
+    PyObject* utils = PyImport_ImportModule("pymexutil");
+    PyObject* unpyed = PyObject_CallMethod(utils, "unpy", "O", pyobj);
+    if (!unpyed) PyErr_Clear();
+    else if (unpyed != pyobj) {
+      mxArray* retval = mxDuplicateArray(Any_PyObject_to_mxArray(unpyed));
+      PERSIST_ARRAY(retval);
+      Py_DECREF(unpyed);
+      return retval;
+    }
     return boxb(pyobj);
+  }
 }
 
 /* TODO: Low priority, but this depends on libmex. If we try to make an

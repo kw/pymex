@@ -43,7 +43,7 @@ CreateCellArray(PyObject* self, PyObject* args, PyObject* kwargs)
 static PyObject*
 CreateNumericArray(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"dims", "class", "complexity", NULL};
+  static char* kwlist[] = {"dims", "mxclass", "complexity", NULL};
   PyObject* pydims = NULL;
   mxClassID class = mxDOUBLE_CLASS;
   mxComplexity complexity = mxREAL;
@@ -142,6 +142,24 @@ CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
   #endif
 }
 
+static PyObject*
+wrap_pycobject(PyObject* self, PyObject* args)
+{
+  PyObject* cobj = NULL;
+  if (!PyArg_ParseTuple(args, "O", &cobj))
+    return NULL;
+  PyObject* nargs = PyTuple_New(0);
+  PyObject* kwargs = PyDict_New();
+  PyDict_SetItemString(kwargs, "mxpointer", cobj);
+  PyObject* arraycls = Find_mltype_for(mxArrayPtr(cobj));
+  /* TODO: There is probably a better way to do this... */
+  PyObject* ret = PyObject_Call(arraycls, nargs, kwargs);
+  Py_DECREF(nargs);
+  Py_DECREF(kwargs);
+  Py_DECREF(arraycls);
+  return ret;
+}
+
 static PyMethodDef mx_methods[] = {
   {"create_cell_array", (PyCFunction)CreateCellArray, METH_VARARGS | METH_KEYWORDS,
    "Creates a cell array with given dimensions, i.e., mx.create_cell_array(2,5,1). "
@@ -160,6 +178,9 @@ static PyMethodDef mx_methods[] = {
    "If called with name='somefunc', returns a handle to that function. "
    "If called with closure='@(x) x+1', returns a MATLAB lambda function. "
    "Note that closures created this way are closed over the current base workspace."},
+  {"wrap_pycobject", (PyCFunction)wrap_pycobject, METH_VARARGS,
+   "Locates an appropriate class for the given mxArray pointer and returns the "
+   "resulting instance."},
   {NULL, NULL, 0, NULL}
 };
 
@@ -808,7 +829,7 @@ initmxmodule(void)
 
   Py_INCREF(&mxArrayType);
   PyModule_AddObject(m, "Array", (PyObject*) &mxArrayType);
-  
+
   PyModule_AddIntMacro(m, mxREAL);
   PyModule_AddIntMacro(m, mxCOMPLEX);
   PyModule_AddIntMacro(m, mxUNKNOWN_CLASS);

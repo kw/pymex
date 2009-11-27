@@ -97,6 +97,7 @@ char mxClassID_to_Numpy_Typekind(mxClassID mxclass);
 mxArray* mxArrayPtr(PyObject* pyobj);
 PyObject* mxArrayPtr_New(mxArray* mxobj);
 int mxArrayPtr_Check(PyObject* obj);
+PyObject* Find_mltype_for(mxArray* mxobj);
 
 #ifndef MEXMODULE
 extern PyObject* mexmodule;
