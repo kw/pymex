@@ -427,8 +427,8 @@ char mxClassID_to_Numpy_Typekind(mxClassID mxclass) {
   case mxINT8_CLASS: 
   case mxINT16_CLASS: 
   case mxINT32_CLASS: 
-  case mxINT64_CLASS: 
-  case mxUINT8_CLASS: return 'i'; 
+  case mxINT64_CLASS: return 'i'; 
+  case mxUINT8_CLASS: 
   case mxUINT16_CLASS: 
   case mxUINT32_CLASS: 
   case mxUINT64_CLASS: return 'u'; 
