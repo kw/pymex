@@ -5,8 +5,6 @@
 #define PYMEX_HELPERS_INCLUDED
 #include <Python.h>
 
-#define PY3K_VERSION_HEX 0x3000000
-
 #define PYMEX_MATLAB_VOIDPTR "py.types.voidptr"
 #define PYMEX_MATLAB_PYOBJECT "py.types.builtin.object"
 

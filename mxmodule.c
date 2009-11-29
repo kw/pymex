@@ -657,7 +657,6 @@ static PyMemberDef mxArray_members[] = {
   {NULL}
 };
 
-#if PY_VERSION_HEX < PY3K_VERSION_HEX
 static PyNumberMethods mxArray_numbermethods = {
   0, /*binaryfunc nb_add;*/
   0, /*binaryfunc nb_subtract;*/
@@ -699,47 +698,7 @@ static PyNumberMethods mxArray_numbermethods = {
   0, /*binaryfunc nb_inplace_true_divide;*/
   mxArray_index, /*unaryfunc nb_index;*/
 };
-#else /* Py3k */
-static PyNumberMethods mxArray_numbermethods = {
-  0, /* binaryfunc nb_add */
-  0, /* binaryfunc nb_subtract */
-  0, /* binaryfunc nb_multiply */
-  0, /* binaryfunc nb_remainder */
-  0, /* binaryfunc nb_divmod */
-  0, /* ternaryfunc nb_power */
-  0, /* unaryfunc nb_negative */
-  0, /* unaryfunc nb_positive */
-  0, /* unaryfunc nb_absolute */
-  mxArray_bool, /* inquiry nb_bool */
-  0, /* unaryfunc nb_invert */
-  0, /* binaryfunc nb_lshift */
-  0, /* binaryfunc nb_rshift */
-  0, /* binaryfunc nb_and */
-  0, /* binaryfunc nb_xor */
-  0, /* binaryfunc nb_or */
-  mxArray_long, /* unaryfunc nb_int */
-  0, /* void *nb_reserved */
-  mxArray_float, /* unaryfunc nb_float */
-  0, /* binaryfunc nb_inplace_add */
-  0, /* binaryfunc nb_inplace_subtract */
-  0, /* binaryfunc nb_inplace_multiply */
-  0, /* binaryfunc nb_inplace_remainder */
-  0, /* ternaryfunc nb_inplace_power */
-  0, /* binaryfunc nb_inplace_lshift */
-  0, /* binaryfunc nb_inplace_rshift */
-  0, /* binaryfunc nb_inplace_and */
-  0, /* binaryfunc nb_inplace_xor */
-  0, /* binaryfunc nb_inplace_or */
-  0, /* binaryfunc nb_floor_divide */
-  0, /* binaryfunc nb_true_divide */
-  0, /* binaryfunc nb_inplace_floor_divide */
-  0, /* binaryfunc nb_inplace_true_divide */
-  mxArray_index, /* unaryfunc nb_index */
-};
 
-#endif
-
-#if PY_VERSION_HEX < PY3K_VERSION_HEX
 static PyTypeObject mxArrayType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -781,76 +740,18 @@ static PyTypeObject mxArrayType = {
     0,                         /* tp_alloc */
     0,                        /* tp_new */
 };
-#else /* Py3k */
-static PyTypeObject mxArrayType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "matlab.mx.Array",             /* tp_name */
-    sizeof(mxArrayObject),             /* tp_basicsize */
-    0,                         /* tp_itemsize */
-    (destructor)mxArray_dealloc, /* tp_dealloc */
-    0,                         /* tp_print */
-    0,                         /* tp_getattr */
-    0,                         /* tp_setattr */
-    0,                         /* tp_reserved */
-    mxArray_repr,                         /* tp_repr */
-    &mxArray_numbermethods,                         /* tp_as_number */
-    0,                         /* tp_as_sequence */
-    0,                         /* tp_as_mapping */
-    0,                         /* tp_hash  */
-    0,                         /* tp_call */
-    mxArray_str,                         /* tp_str */
-    0,                         /* tp_getattro */
-    0,                         /* tp_setattro */
-    0,                         /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT |
-        Py_TPFLAGS_BASETYPE,   /* tp_flags */
-    "mxArray objects",           /* tp_doc */
-    0,		               /* tp_traverse */
-    0,		               /* tp_clear */
-    0,		               /* tp_richcompare */
-    0,		               /* tp_weaklistoffset */
-    0,		               /* tp_iter */
-    0,		               /* tp_iternext */
-    mxArray_methods,             /* tp_methods */
-    mxArray_members,                        /* tp_members */
-    mxArray_getseters,           /* tp_getset */
-    0,                         /* tp_base */
-    0,                         /* tp_dict */
-    0,                         /* tp_descr_get */
-    0,                         /* tp_descr_set */
-    0,                         /* tp_dictoffset */
-    (initproc)mxArray_init,                         /* tp_init */
-    0,                         /* tp_alloc */
-    0,                         /* tp_new */
-};
-#endif
 
-#if PY_VERSION_HEX >= PY3K_VERSION_HEX
-static PyModuleDef mxmodule_def = {
-    PyModuleDef_HEAD_INIT,
-    "matlab.mx",
-    "MATLAB matrix API module",
-    -1,
-    mx_methods, NULL, NULL, NULL, NULL
-};
-#endif
 
-#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC PyObject *
+#ifndef PyMODINIT_FUNC
+#define PyMODINIT_FUNC void
 #endif
 PyMODINIT_FUNC initmxmodule(void) {
   mxArrayType.tp_new = PyType_GenericNew;
   /*mxArrayType.tp_as_number = mxArray_numbermethods;*/
 
-  #if PY_VERSION_HEX < PY3K_VERSION_HEX
   if (PyType_Ready(&mxArrayType) < 0) return;
   PyObject *m = Py_InitModule3("matlab.mx", mx_methods, "MATLAB matrix API module");
   if (!m) return;
-  #else
-  if (PyType_Ready(&mxArrayType) < 0) return NULL;
-  PyObject *m = PyModule_Create(&mxmodule_def);
-  if (!m) return NULL;
-  #endif
 
   Py_INCREF(&mxArrayType);
   PyModule_AddObject(m, "Array", (PyObject *) &mxArrayType);
@@ -876,7 +777,4 @@ PyMODINIT_FUNC initmxmodule(void) {
 
   mxmodule = m;
 
-  #if PY_VERSION_HEX >= PY3K_VERSION_HEX
-  return m;
-  #endif
 }

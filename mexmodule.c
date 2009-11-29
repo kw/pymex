@@ -136,25 +136,11 @@ static PyMethodDef mex_methods[] = {
 };
 #endif
 
-#if PY_VERSION_HEX >= PY3K_VERSION_HEX
-static PyModuleDef mexmodule_def = {
-    PyModuleDef_HEAD_INIT,
-    "matlab.mex",
-    #if MATLAB_MEX_FILE
-    "MATLAB Extension API module",
-    #else
-    "MATLAB Extension API module (only available inside MATLAB)",
-    #endif
-    -1,
-    mex_methods, NULL, NULL, NULL, NULL
-};
-#endif
 
 #ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC PyObject *
+#define PyMODINIT_FUNC void
 #endif
 PyMODINIT_FUNC initmexmodule(void) {
-  #if PY_VERSION_HEX < PY3K_VERSION_HEX
   PyObject *m = Py_InitModule3("matlab.mex", mex_methods, 
     #if MATLAB_MEX_FILE
     "MATLAB Extension API module"
@@ -163,10 +149,6 @@ PyMODINIT_FUNC initmexmodule(void) {
     #endif
 			       );
   if (!m) return;
-  #else
-  PyObject *m = PyModule_Create(&mexmodule_def);
-  if (!m) return NULL;
-  #endif
 
   mexmodule = m;
   
@@ -174,8 +156,4 @@ PyMODINIT_FUNC initmexmodule(void) {
   PyObject *path = PyObject_GetAttrString(sys, "path");
   PyObject *pymexpath = PyObject_CallMethod(m, "eval", "s", "fileparts(which('pymex'));");
   if (PyList_Append(path, pymexpath) < 0) PyErr_Clear();
-
-  #if PY_VERSION_HEX >= PY3K_VERSION_HEX
-  return m;
-  #endif
 }
