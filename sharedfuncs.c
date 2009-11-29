@@ -103,7 +103,7 @@ mxArray* box_by_type(PyObject* pyobj) {
   }
   if (ret || !box) {
     PYMEX_DEBUG("Unable to find " PYMEX_MATLAB_PYOBJECT);
-    PyErr_Format(PyExc_RuntimeError,"Unable to find %s", PYMEX_MATLAB_PYOBJECT);
+    PyErr_Format(MATLABError,"Unable to find %s", PYMEX_MATLAB_PYOBJECT);
     return NULL;
   }
   PYMEX_DEBUG("Returning box\n");
@@ -134,10 +134,10 @@ mxArray* boxb (PyObject* pyobj) {
 
 /* Unboxes an object, returning a borrowed reference */
 PyObject* unbox (const mxArray* mxobj) {  
-  if (!mxobj) return PyErr_Format(PyExc_RuntimeError, "Can't unbox from null pointer");
+  if (!mxobj) return PyErr_Format(MATLABError, "Can't unbox from null pointer");
   if (mxIsPyNull(mxobj)) {
     PYMEX_DEBUG("Unboxed a null object.");
-    return PyErr_Format(PyExc_RuntimeError, "Unboxed pointer is null.");
+    return PyErr_Format(MATLABError, "Unboxed pointer is null.");
   }
   else {
     void** ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
@@ -209,7 +209,7 @@ mxArray* PyObject_to_mxChar(PyObject* pyobj) {
     return mxchar;
   } 
   else {
-    PyErr_Format(PyExc_RuntimeError, "Can't convert NULL to string");
+    PyErr_Format(MATLABError, "Can't convert NULL to string");
     return NULL;
   }
 }
@@ -311,7 +311,7 @@ PyObject* Calculate_matlab_mro(mxArray* mxobj) {
   mxArray* argout[1] = {NULL};
   mexSetTrapFlag(1);
   int err = mexCallMATLAB(1, argout, 3, argin, "mro");
-  if (err) return PyErr_Format(PyExc_RuntimeError, "MATLAB error while trying to run 'mro' function.");
+  if (err) return PyObject_CallMethod(mexmodule, "__raiselasterror", "()");
   else {
     PyObject* retval = mxCell_to_PyTuple_recursive(argout[0]);
     mxDestroyArray(argout[0]);

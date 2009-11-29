@@ -427,7 +427,7 @@ mxArray_mxGetFields(PyObject* self)
   for (i=0; i<nfields; i++) {
     const char* fieldname = mxGetFieldNameByNumber(ptr, i);
     if (!fieldname)
-      return PyErr_Format(PyExc_RuntimeError, "Unable to read field %d from struct.", i);
+      return PyErr_Format(MATLABError, "Unable to read field %d from struct.", i);
     PyObject* pyname = PyBytes_FromString(fieldname);
     PyTuple_SetItem(outtuple, i, pyname);
   }
