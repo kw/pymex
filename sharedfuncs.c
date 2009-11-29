@@ -48,7 +48,7 @@ mxArray *box_by_type(PyObject *pyobj) {
     ret = mexCallMATLAB(1,&box,0,NULL,PYMEX_MATLAB_VOIDPTR);
   }
   else {
-    PyObject *type = (PyObject*) pyobj->ob_type;
+    PyObject *type = (PyObject *) pyobj->ob_type;
     PyObject *mro;
     if (PyType_Check(pyobj)) {
       /* Calling type on a type gives us back type, and
@@ -142,7 +142,7 @@ PyObject *unbox (const mxArray *mxobj) {
   }
   else {
     void **ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
-    return (PyObject*) *ptr;
+    return (PyObject *) *ptr;
   }
 }
 
@@ -174,7 +174,7 @@ bool mxIsPyNull (const mxArray *mxobj) {
 bool mxIsPyObject(const mxArray *mxobj) {
   mxArray *boolobj;
   mxArray *args[2];
-  args[0] = (mxArray*) mxobj;
+  args[0] = (mxArray *) mxobj;
   args[1] = mxCreateString(PYMEX_MATLAB_VOIDPTR);
   mexCallMATLAB(1,&boolobj,2,args,"isa");
   mxDestroyArray(args[1]);
@@ -265,7 +265,7 @@ PyObject *Any_mxArray_to_PyObject(const mxArray *mxobj) {
     return mxChar_to_PyBytes(mxobj);
   }
   else {
-    return Py_mxArray_New((mxArray*) mxobj,1);
+    return Py_mxArray_New((mxArray *) mxobj,1);
   }
 }
 
@@ -449,12 +449,12 @@ mxArray *mxArrayPtr(PyObject *pyobj) {
     PyErr_Format(PyExc_RuntimeError, "mxptr desc does not match mxmodule");
     return NULL;
   }
-  return (mxArray*) PyCObject_AsVoidPtr(ptr);
+  return (mxArray *) PyCObject_AsVoidPtr(ptr);
 }
 
 static void _mxArrayPtr_destructor(void *mxobj, void *desc) {
-  Py_XDECREF((PyObject*) desc);  
-  if (mxobj) mxDestroyArray((mxArray*) mxobj);
+  Py_XDECREF((PyObject *) desc);  
+  if (mxobj) mxDestroyArray((mxArray *) mxobj);
 }
 
 PyObject *mxArrayPtr_New(mxArray *mxobj) {
