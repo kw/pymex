@@ -45,6 +45,30 @@ static PyObject* m_printf(PyObject* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
+static PyObject* _raiselasterror(PyObject* self) {
+  mxArray* argin;
+  mxArray* argout;
+  argin = mxCreateString("reset");
+  mexSetTrapFlag(1);
+  int retval = mexCallMATLAB(1, &argout, 1, &argin, "lasterror");
+  if (!retval) {
+    char* id = mxArrayToString(mxGetField(argout, 0, "identifier"));
+    char* msg = mxArrayToString(mxGetField(argout, 0, "message"));
+    PyObject* stack = Any_mxArray_to_PyObject(mxGetField(argout, 0, "stack"));
+    PyObject* errval = Py_BuildValue("(ssO)", id, msg, stack);
+    PyErr_SetObject(MATLABError, errval);
+    mxFree(id);
+    mxFree(msg);
+    Py_DECREF(stack);
+    Py_DECREF(errval); /* Docs don't mention it, but apparently
+			  PyErr_SetObject doesn't steal the reference. */
+  }
+  else {
+    PyErr_SetString(MATLABError, "MATLAB Error occurred, but could not retrieve error struct.");
+  }
+  return NULL;
+}
+
 static PyObject* m_eval(PyObject* self, PyObject* args) {
   char* evalstring = NULL;
   if (!PyArg_ParseTuple(args, "s", &evalstring))
@@ -58,9 +82,8 @@ static PyObject* m_eval(PyObject* self, PyObject* args) {
   int retval = mexCallMATLAB(1, &out, 2, evalarray, "evalin");
   mxDestroyArray(evalarray[0]);
   mxDestroyArray(evalarray[1]);
-  /* TODO: Throw some sort of error instead. */
   if (retval)
-    Py_RETURN_NONE;
+    return _raiselasterror(NULL);
   else {
     return Any_mxArray_to_PyObject(out);
   }
@@ -85,7 +108,7 @@ static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
   mexSetTrapFlag(1);
   int retval = mexCallMATLAB(nargout, outargs, nargin, inargs, "feval");
   if (retval)
-    return PyErr_Format(PyExc_RuntimeError, "I have no idea what happened");
+    return _raiselasterror(NULL);
   else {
     if (tupleout) {
       PyObject* outseq = PyTuple_New(nargout);
@@ -103,6 +126,8 @@ static PyMethodDef mex_methods[] = {
   {"printf", m_printf, METH_VARARGS, "Print a string using mexPrintf"},
   {"eval", m_eval, METH_VARARGS, "Evaluates a string using mexEvalString"},
   {"call", (PyCFunction)m_call, METH_VARARGS | METH_KEYWORDS, "feval the inputs"},
+  {"__raiselasterror", (PyCFunction)_raiselasterror, METH_NOARGS,
+   "Raises a MATLABError. Attempts to retrieve the MATLAB error struct to do so."},
   {NULL, NULL, 0, NULL}
 };
 #else

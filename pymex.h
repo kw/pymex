@@ -113,8 +113,10 @@ PyObject* mxmodule = NULL;
 
 #ifndef MATLABMODULE
 extern PyObject* matlabmodule;
+extern PyObject* MATLABError;
 #else
 PyObject* matlabmodule = NULL;
+PyObject* MATLABError = NULL;
 #endif
 
 #ifndef MATMODULE

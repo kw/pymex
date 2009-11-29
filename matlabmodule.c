@@ -35,6 +35,9 @@ initmatlabmodule(void)
   if (!m) return NULL;
   #endif
 
+  MATLABError = PyErr_NewException("matlab.MATLABError", NULL, NULL);
+  Py_INCREF(MATLABError);
+
   matlabmodule = m;
 
   initmexmodule();
