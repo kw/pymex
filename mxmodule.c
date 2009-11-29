@@ -5,13 +5,13 @@
 #import "pymex.h"
 #import "structmember.h"
 
-static PyObject* dowrap(PyObject* cobj) {
-  PyObject* nargs = PyTuple_New(0);
-  PyObject* kwargs = PyDict_New();
+static PyObject *dowrap(PyObject *cobj) {
+  PyObject *nargs = PyTuple_New(0);
+  PyObject *kwargs = PyDict_New();
   PyDict_SetItemString(kwargs, "mxpointer", cobj);
-  PyObject* arraycls = Find_mltype_for(mxArrayPtr(cobj));
+  PyObject *arraycls = Find_mltype_for(mxArrayPtr(cobj));
   /* TODO: There is probably a better way to do this... */
-  PyObject* ret = PyObject_Call(arraycls, nargs, kwargs);
+  PyObject *ret = PyObject_Call(arraycls, nargs, kwargs);
   Py_DECREF(nargs);
   Py_DECREF(kwargs);
   Py_DECREF(arraycls);
@@ -24,9 +24,9 @@ static PyObject* dowrap(PyObject* cobj) {
   mwSize dims[ndim];							\
   mwSize i;								\
   for (i=0; i < ndim; i++) {						\
-    PyObject* item = PySequence_GetItem(A, i);				\
+    PyObject *item = PySequence_GetItem(A, i);				\
     if (!item) return NULL;						\
-    PyObject* index = PyNumber_Index(item);				\
+    PyObject *index = PyNumber_Index(item);				\
     Py_DECREF(item);							\
     if (!index) return NULL;						\
     dims[i] = (mwSize) PyLong_AsLong(index);				\
@@ -38,11 +38,9 @@ static PyObject* dowrap(PyObject* cobj) {
 			  (long) i, (long) dims[i]);			\
   } if(1)
   
-static PyObject*
-CreateCellArray(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"dims", "wrap", NULL};
-  PyObject* pydims = NULL;
+static PyObject *CreateCellArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"dims", "wrap", NULL};
+  PyObject *pydims = NULL;
   int wrap = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
 				   &pydims, &wrap))
@@ -51,18 +49,16 @@ CreateCellArray(PyObject* self, PyObject* args, PyObject* kwargs)
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
-  mxArray* cell = mxCreateCellArray(ndim, dims);
+  mxArray *cell = mxCreateCellArray(ndim, dims);
   if (wrap)    
     return dowrap(mxArrayPtr_New(cell));
   else
     return mxArrayPtr_New(cell);
 }
 
-static PyObject*
-CreateNumericArray(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"dims", "mxclass", "complexity", "wrap", NULL};
-  PyObject* pydims = NULL;
+static PyObject *CreateNumericArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"dims", "mxclass", "complexity", "wrap", NULL};
+  PyObject *pydims = NULL;
   mxClassID class = mxDOUBLE_CLASS;
   mxComplexity complexity = mxREAL;
   int wrap = 0;
@@ -73,19 +69,16 @@ CreateNumericArray(PyObject* self, PyObject* args, PyObject* kwargs)
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
-  mxArray* array = mxCreateNumericArray(ndim, dims, class, complexity);
+  mxArray *array = mxCreateNumericArray(ndim, dims, class, complexity);
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
     return mxArrayPtr_New(array);
 }
 
-/* TODO: Allow field initialization. */
-static PyObject*
-CreateStructArray(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"dims", "wrap", NULL};
-  PyObject* pydims = NULL;
+static PyObject *CreateStructArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"dims", "wrap", NULL};
+  PyObject *pydims = NULL;
   int wrap = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
 				   &pydims, &wrap))
@@ -94,18 +87,16 @@ CreateStructArray(PyObject* self, PyObject* args, PyObject* kwargs)
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
-  mxArray* array = mxCreateStructArray(ndim, dims, 0, NULL);
+  mxArray *array = mxCreateStructArray(ndim, dims, 0, NULL);
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
     return mxArrayPtr_New(array);
 }
 
-static PyObject*
-CreateCharArray(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"dims", "wrap", NULL};
-  PyObject* pydims = NULL;
+static PyObject *CreateCharArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"dims", "wrap", NULL};
+  PyObject *pydims = NULL;
   int wrap = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
 				   &pydims, &wrap))
@@ -114,40 +105,36 @@ CreateCharArray(PyObject* self, PyObject* args, PyObject* kwargs)
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
-  mxArray* array = mxCreateCharArray(ndim, dims);
+  mxArray *array = mxCreateCharArray(ndim, dims);
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
     return mxArrayPtr_New(array);
 }
 
-static PyObject*
-CreateString(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"string", "wrap", NULL};
-  char* string = NULL;
+static PyObject *CreateString(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"string", "wrap", NULL};
+  char *string = NULL;
   int wrap = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwlist,
 				   &string, &wrap))
     return NULL;
-  mxArray* array = mxCreateString((const char*) string);
+  mxArray *array = mxCreateString((const char*) string);
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
     return mxArrayPtr_New(array);
 }
 
-static PyObject*
-CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"name", "closure", "wrap", NULL};
-  char* name = NULL;
-  char* closure = NULL;
+static PyObject *CreateFunctionHandle(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"name", "closure", "wrap", NULL};
+  char *name = NULL;
+  char *closure = NULL;
   int wrap = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssi", kwlist,
 				   &name, &closure, &wrap))
     return NULL;
-  PyObject* evalstring;
+  PyObject *evalstring;
   if (name && closure)
     return PyErr_Format(PyExc_ValueError, "Provide a function name OR a closure, not both.");
   else if (name)
@@ -157,7 +144,7 @@ CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
   else
     return PyErr_Format(PyExc_ValueError, "Must provide a string containing a name or a MATLAB closure.");
   #if MATLAB_MEX_FILE
-  PyObject* result = PyObject_CallMethod(mexmodule, "eval", "O", evalstring);
+  PyObject *result = PyObject_CallMethod(mexmodule, "eval", "O", evalstring);
   Py_DECREF(evalstring);
   if (!result) return NULL;
   if (mxGetClassID(mxArrayPtr(result)) != mxFUNCTION_CLASS)
@@ -165,7 +152,7 @@ CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
   if (wrap)
     return result;
   else {
-    PyObject* cobj = PyObject_GetAttrString(result, "_mxptr");
+    PyObject *cobj = PyObject_GetAttrString(result, "_mxptr");
     Py_DECREF(result);    
     return cobj;
   }
@@ -176,10 +163,8 @@ CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
   #endif
 }
 
-static PyObject*
-wrap_pycobject(PyObject* self, PyObject* args)
-{
-  PyObject* cobj = NULL;
+static PyObject *wrap_pycobject(PyObject *self, PyObject *args) {
+  PyObject *cobj = NULL;
   if (!PyArg_ParseTuple(args, "O", &cobj))
     return NULL;
   return dowrap(cobj);
@@ -211,10 +196,8 @@ static PyMethodDef mx_methods[] = {
 
 /* libmx mxArray type */
 
-static int
-mxArray_init(mxArrayObject* self, PyObject* args, PyObject* kwargs)
-{
-  PyObject* mxptr = PyDict_GetItemString(kwargs, "mxpointer");
+static int mxArray_init(mxArrayObject* self, PyObject *args, PyObject *kwargs) {
+  PyObject *mxptr = PyDict_GetItemString(kwargs, "mxpointer");
   if (!mxptr) {
     PyErr_Format(PyExc_ValueError, "Failed to build mx.Array wrapper: need mxpointer keyword argument.");
     return -1;
@@ -228,32 +211,23 @@ mxArray_init(mxArrayObject* self, PyObject* args, PyObject* kwargs)
   return 0;
 }
 
-static void 
-mxArray_dealloc(mxArrayObject* self)
-{
+static void mxArray_dealloc(mxArrayObject* self) {
   Py_XDECREF(self->mxptr);
-  self->ob_type->tp_free((PyObject*) self);
+  self->ob_type->tp_free((PyObject *) self);
 }
 
-static PyObject*
-mxArray_mxGetClassID(PyObject* self)
-{
+static PyObject *mxArray_mxGetClassID(PyObject *self) {
   mxClassID id = mxGetClassID(mxArrayPtr(self));
   return PyLong_FromLong((long) id);
 }
 
-static PyObject*
-mxArray_mxGetClassName(PyObject* self)
-{
-  const char* class = mxGetClassName(mxArrayPtr(self));
+static PyObject *mxArray_mxGetClassName(PyObject *self) {
+  const char *class = mxGetClassName(mxArrayPtr(self));
   return PyBytes_FromString(class);
 }
 
-/* TODO: Add keyword option to index from 1 instead of 0 */
-static PyObject*
-mxArray_mxCalcSingleSubscript(PyObject* self, PyObject* args)
-{
-  mxArray* mxobj = mxArrayPtr(self);
+static PyObject *mxArray_mxCalcSingleSubscript(PyObject *self, PyObject *args) {
+  mxArray *mxobj = mxArrayPtr(self);
   mwSize len = (mwIndex) PySequence_Length(args);
   mwSize dims = mxGetNumberOfDimensions(mxobj);
   if (len > dims) {
@@ -263,21 +237,19 @@ mxArray_mxCalcSingleSubscript(PyObject* self, PyObject* args)
   mwIndex subs[len];
   mwIndex i;
   for (i=0; i<len; i++) {
-    PyObject* ind = PyNumber_Index(PyTuple_GetItem(args, (Py_ssize_t) i));
+    PyObject *ind = PyNumber_Index(PyTuple_GetItem(args, (Py_ssize_t) i));
     if (PyErr_Occurred()) return NULL;
     subs[i] = (mwIndex) PyLong_AsLong(ind);
   }
   return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
 }
 
-static PyObject*
-mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"fieldname","index", NULL};
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_mxGetField(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"fieldname","index", NULL};
+  mxArray *ptr = mxArrayPtr(self);
   if (!mxIsStruct(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
-  char* fieldname;
+  char *fieldname;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
 				   kwlist, &fieldname, &index))
@@ -287,7 +259,7 @@ mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
   if (mxGetFieldNumber(mxArrayPtr(self), fieldname) < 0)
     return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field.", fieldname);
-  mxArray* item = mxGetField(ptr, (mwIndex) index, fieldname);
+  mxArray *item = mxGetField(ptr, (mwIndex) index, fieldname);
   if (!item) {
     item = mxCreateDoubleMatrix(0,0,mxREAL);
     PERSIST_ARRAY(item);
@@ -308,12 +280,10 @@ mxArray_mxGetField(PyObject* self, PyObject* args, PyObject* kwargs)
    UPDATE: Apparently this is fixed in 2009b, but with some change to the API of some sort.
    I do not have this version. I did notice that on my 2009a machine no SIGABRT was signaled. Odd.
 */
-static PyObject*
-mxArray_mxGetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"propname","index", NULL};
-  mxArray* ptr = mxArrayPtr(self);
-  char* propname;
+static PyObject *mxArray_mxGetProperty(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"propname","index", NULL};
+  mxArray *ptr = mxArrayPtr(self);
+  char *propname;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
 				   kwlist, &propname, &index))
@@ -321,17 +291,15 @@ mxArray_mxGetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
-  mxArray* item = mxGetProperty(ptr, (mwIndex) index, propname);
+  mxArray *item = mxGetProperty(ptr, (mwIndex) index, propname);
   if (!item)
     return PyErr_Format(PyExc_KeyError, "Lookup of property '%s' failed.", propname);
   return Any_mxArray_to_PyObject(item);
 }
 
-static PyObject*
-mxArray_mxGetCell(PyObject* self, PyObject* args)
-{
+static PyObject *mxArray_mxGetCell(PyObject *self, PyObject *args) {
   long index = 0;
-  mxArray* ptr = mxArrayPtr(self);
+  mxArray *ptr = mxArrayPtr(self);
   if (!mxIsCell(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
   if (!PyArg_ParseTuple(args, "l", &index))
@@ -339,7 +307,7 @@ mxArray_mxGetCell(PyObject* self, PyObject* args)
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
-  mxArray* item = mxGetCell(ptr, (mwIndex) index);
+  mxArray *item = mxGetCell(ptr, (mwIndex) index);
   if (!item) {
     item = mxCreateDoubleMatrix(0,0,mxREAL);
     PERSIST_ARRAY(item);
@@ -349,15 +317,13 @@ mxArray_mxGetCell(PyObject* self, PyObject* args)
   return Any_mxArray_to_PyObject(item);
 }
 
-static PyObject*
-mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"fieldname", "value", "index", NULL};
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"fieldname", "value", "index", NULL};
+  mxArray *ptr = mxArrayPtr(self);
   if (!mxIsStruct(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
-  char* fieldname;
-  PyObject* newvalue;
+  char *fieldname;
+  PyObject *newvalue;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
 				   kwlist, &fieldname, &newvalue, &index))
@@ -368,22 +334,20 @@ mxArray_mxSetField(PyObject* self, PyObject* args, PyObject* kwargs)
   if (mxGetFieldNumber(ptr, fieldname) < 0)
     if (mxAddField(ptr, fieldname) < 0)
       return PyErr_Format(PyExc_KeyError, "Struct has no '%s' field, and could not create it.", fieldname);
-  mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue)); /*FIXME: This probably leaks when the input isn't already an mxArray, since the returned object is new but never freed */
+  mxArray *mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue)); /*FIXME: This probably leaks when the input isn't already an mxArray, since the returned object is new but never freed */
   PERSIST_ARRAY(mxvalue);
-  mxArray* oldval = mxGetField(ptr, (mwIndex) index, fieldname);
+  mxArray *oldval = mxGetField(ptr, (mwIndex) index, fieldname);
   if (oldval) mxDestroyArray(oldval);
-  mxSetField((mxArray*) ptr, (mwIndex) index, fieldname, mxvalue);
+  mxSetField((mxArray *) ptr, (mwIndex) index, fieldname, mxvalue);
   Py_RETURN_NONE;
 }
 
 /* FIXME: See discussion at mxGetProperty */
-static PyObject*
-mxArray_mxSetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
-{
-  static char* kwlist[] = {"propname", "value", "index", NULL};
-  const mxArray* ptr = mxArrayPtr(self);
-  char* propname;
-  PyObject* newvalue;
+static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"propname", "value", "index", NULL};
+  const mxArray *ptr = mxArrayPtr(self);
+  char *propname;
+  PyObject *newvalue;
   long index = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
 				   kwlist, &propname, &newvalue, &index))
@@ -391,68 +355,58 @@ mxArray_mxSetProperty(PyObject* self, PyObject* args, PyObject* kwargs)
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
-  mxArray* mxvalue = Any_PyObject_to_mxArray(newvalue);
-  mxSetProperty((mxArray*) ptr, (mwIndex) index, propname, mxvalue);
+  mxArray *mxvalue = Any_PyObject_to_mxArray(newvalue);
+  mxSetProperty((mxArray *) ptr, (mwIndex) index, propname, mxvalue);
   Py_RETURN_NONE;
 }
 
-static PyObject*
-mxArray_mxSetCell(PyObject* self, PyObject* args)
-{
-  const mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_mxSetCell(PyObject *self, PyObject *args) {
+  const mxArray *ptr = mxArrayPtr(self);
   if (!mxIsCell(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
-  PyObject* newvalue;
+  PyObject *newvalue;
   long index = 0;
   if (!PyArg_ParseTuple(args, "lO", &index, &newvalue))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
     return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
-  mxArray* mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue));
+  mxArray *mxvalue = mxDuplicateArray(Any_PyObject_to_mxArray(newvalue));
   PERSIST_ARRAY(mxvalue);
-  mxArray* oldval = mxGetCell(ptr, (mwIndex) index);
+  mxArray *oldval = mxGetCell(ptr, (mwIndex) index);
   if (oldval) mxDestroyArray(oldval);
-  mxSetCell((mxArray*) ptr, (mwIndex) index, mxvalue);
+  mxSetCell((mxArray *) ptr, (mwIndex) index, mxvalue);
   Py_RETURN_NONE;
 }
 
-static PyObject*
-mxArray_mxGetFields(PyObject* self)
-{
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_mxGetFields(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
   int nfields = mxGetNumberOfFields(ptr);
-  PyObject* outtuple = PyTuple_New(nfields);
+  PyObject *outtuple = PyTuple_New(nfields);
   int i;
   for (i=0; i<nfields; i++) {
-    const char* fieldname = mxGetFieldNameByNumber(ptr, i);
+    const char *fieldname = mxGetFieldNameByNumber(ptr, i);
     if (!fieldname)
       return PyErr_Format(MATLABError, "Unable to read field %d from struct.", i);
-    PyObject* pyname = PyBytes_FromString(fieldname);
+    PyObject *pyname = PyBytes_FromString(fieldname);
     PyTuple_SetItem(outtuple, i, pyname);
   }
   return outtuple;
 }
 
-static PyObject*
-mxArray_mxGetNumberOfElements(PyObject* self)
-{
+static PyObject *mxArray_mxGetNumberOfElements(PyObject *self) {
   mwSize len = mxGetNumberOfElements(mxArrayPtr(self));
   return PyLong_FromLong(len);
 }
 
-static PyObject*
-mxArray_mxGetNumberOfDimensions(PyObject* self)
-{
+static PyObject *mxArray_mxGetNumberOfDimensions(PyObject *self) {
   mwSize ndim = mxGetNumberOfDimensions(mxArrayPtr(self));
   return PyLong_FromLong(ndim);
 }
 
-static PyObject*
-mxArray_mxGetDimensions(PyObject* self)
-{
+static PyObject *mxArray_mxGetDimensions(PyObject *self) {
   mwSize ndim = mxGetNumberOfDimensions(mxArrayPtr(self));
-  PyObject* dimtuple = PyTuple_New(ndim);
+  PyObject *dimtuple = PyTuple_New(ndim);
   const mwSize* dimarray = mxGetDimensions(mxArrayPtr(self));
   Py_ssize_t i;
   for (i=0; i<ndim; i++) {
@@ -461,17 +415,13 @@ mxArray_mxGetDimensions(PyObject* self)
   return dimtuple;
 }
 
-static PyObject*
-mxArray_mxGetElementSize(PyObject* self)
-{
+static PyObject *mxArray_mxGetElementSize(PyObject *self) {
   size_t sz = mxGetElementSize(mxArrayPtr(self));
   return PyLong_FromSize_t(sz);
 }
 
-static PyObject* 
-mxArray_float(PyObject* self)
-{
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_float(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
   if (ptr && mxGetNumberOfElements(ptr) == 1 && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
     double val = mxGetScalar(ptr);
     return PyFloat_FromDouble(val);
@@ -484,14 +434,13 @@ mxArray_float(PyObject* self)
     else if (mxGetNumberOfElements(ptr) > 1)
       return PyErr_Format(PyExc_ValueError, "Not a scalar");
     else
-      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
+      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", 
+			  mxGetClassName(ptr));
   }
 }
 
-static PyObject* 
-mxArray_long(PyObject* self)
-{
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_long(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
   if (ptr && mxGetNumberOfElements(ptr) == 1 && (mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr))) {
     /* FIXME: This is a bad idea. Look up the correct type and interpret appropriately. */
     long long val = (long long) mxGetScalar(ptr);
@@ -505,29 +454,28 @@ mxArray_long(PyObject* self)
     else if (mxGetNumberOfElements(ptr) > 1)
       return PyErr_Format(PyExc_ValueError, "Not a scalar");
     else
-      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", mxGetClassName(ptr));
+      return PyErr_Format(PyExc_ValueError, "Expected numeric, logical, or character array, got %s instead.", 
+			  mxGetClassName(ptr));
   }
 }
 
-static PyObject*
-mxArray_index(PyObject* self)
-{
+static PyObject *mxArray_index(PyObject *self) {
   return mxArray_long(self);
 }
 
 
 /* These two are helper methods. The stringifier has to talk to MATLAB, so it might not be available. Because
    of this, str and repr must try their preferences and fall back on the simple repr if necessary. */
-static PyObject* mxArray_repr_helper(PyObject* self) {
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_repr_helper(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
   return PyBytes_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
 }
 
-static PyObject* mxArray_str_helper(PyObject* self) {
+static PyObject *mxArray_str_helper(PyObject *self) {
   #if MATLAB_MEX_FILE
   static char newline[] = {10, 0};
-  PyObject* rawstring = PyObject_CallMethod(mexmodule, "call", "sO", "any2str", self);
-  PyObject* stringval = PyObject_CallMethod(rawstring, "strip", "s", newline);
+  PyObject *rawstring = PyObject_CallMethod(mexmodule, "call", "sO", "any2str", self);
+  PyObject *stringval = PyObject_CallMethod(rawstring, "strip", "s", newline);
   Py_DECREF(rawstring);
   return stringval;
   #else
@@ -535,10 +483,8 @@ static PyObject* mxArray_str_helper(PyObject* self) {
   #endif
 }
 
-static PyObject*
-mxArray_str(PyObject* self)
-{
-  PyObject* str = mxArray_str_helper(self);
+static PyObject *mxArray_str(PyObject *self) {
+  PyObject *str = mxArray_str_helper(self);
   if (PyErr_Occurred()) {
     PyErr_Clear();
     return mxArray_repr_helper(self);
@@ -546,10 +492,8 @@ mxArray_str(PyObject* self)
   else return str;
 }
 
-static PyObject*
-mxArray_repr(PyObject* self)
-{
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_repr(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
   #if MATLAB_MEX_FILE
   if ((mxIsNumeric(ptr) || mxIsLogical(ptr) || mxIsChar(ptr)) && mxGetNumberOfElements(ptr) < 16) {
     return mxArray_str(self);
@@ -558,43 +502,36 @@ mxArray_repr(PyObject* self)
   return mxArray_repr_helper(self);     
 }
 
-static void _dataptr_destructor(void* data, void* desc)
-{
-  Py_XDECREF((PyObject*) desc);
+static void _dataptr_destructor(void* data, void* desc) {
+  Py_XDECREF((PyObject *) desc);
 }
-static PyObject*
-mxArray_get_data(PyObject* self)
-{
-  mxArray* ptr = mxArrayPtr(self);
+static PyObject *mxArray_get_data(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
   void* data = mxGetData(ptr);
   Py_INCREF(self);
-  PyObject* cobj = PyCObject_FromVoidPtrAndDesc(data, self, _dataptr_destructor);
+  PyObject *cobj = PyCObject_FromVoidPtrAndDesc(data, self, _dataptr_destructor);
   return cobj;
 }
 
-static PyObject*
-mxArray_get_element(PyObject* self, PyObject* args)
-{
+static PyObject *mxArray_get_element(PyObject *self, PyObject *args) {
   Py_ssize_t index = 0;
   if (!PyArg_ParseTuple(args, "|n", &index)) return NULL;
-  mxArray* ptr = mxArrayPtr(self);
+  mxArray *ptr = mxArrayPtr(self);
   Py_ssize_t numel = (Py_ssize_t) mxGetNumberOfElements(ptr);
   Py_ssize_t elsize = (Py_ssize_t) mxGetElementSize(ptr);
   if (index < 0 || index >= numel)
     PyErr_Format(PyExc_IndexError, "Array index out of bounds (0<=%zd<%zd)", index, numel);
-  char* data = (char*) mxGetData(ptr);
+  char *data = (char*) mxGetData(ptr);
   data += elsize*index;
   return PyBytes_FromStringAndSize(data, elsize);
 }
 
-static PyObject*
-mxArray_set_element(PyObject* self, PyObject* args, PyObject* kw)
-{
-  static char* kwlist[] = {"bytes", "index", NULL};
+static PyObject *mxArray_set_element(PyObject *self, PyObject *args, PyObject *kw) {
+  static char *kwlist[] = {"bytes", "index", NULL};
   Py_ssize_t index = 0;
-  PyObject* bytes = NULL;
+  PyObject *bytes = NULL;
   if (!PyArg_ParseTupleAndKeywords(args, kw, "S|n", kwlist, &bytes, &index)) return NULL;
-  mxArray* ptr = mxArrayPtr(self);
+  mxArray *ptr = mxArrayPtr(self);
   Py_ssize_t numel = (Py_ssize_t) mxGetNumberOfElements(ptr);
   Py_ssize_t elsize = (Py_ssize_t) mxGetElementSize(ptr);
   if (index < 0 || index >= numel)
@@ -603,8 +540,8 @@ mxArray_set_element(PyObject* self, PyObject* args, PyObject* kw)
   if (bytesize != elsize)
     PyErr_Format(PyExc_ValueError, "Bytes size must equal element size (%zd != %zd)", 
 		 bytesize, elsize);
-  char* bytestring = PyBytes_AsString(bytes);
-  char* data = (char*) mxGetData(ptr);
+  char *bytestring = PyBytes_AsString(bytes);
+  char *data = (char*) mxGetData(ptr);
   data += elsize*index;
   int i;
   for (i=0; i < elsize; i++)
@@ -635,16 +572,13 @@ typedef struct {
 #define NPY_ARR_HAS_DESCR  0x0800
 /* end things copied from NumPy */
 
-static void numpy_array_struct_destructor(void* ptr, void* desc)
-{
+static void numpy_array_struct_destructor(void* ptr, void* desc) {
   PyMem_Free(ptr);
   Py_DECREF(desc);
 }
-
-static PyObject* mxArray_numpy_array_struct(PyObject* self, void* closure)
-{
+static PyObject *mxArray_numpy_array_struct(PyObject *self, void* closure) {
   PyArrayInterface* info = PyMem_New(PyArrayInterface, 1);
-  mxArray* ptr = mxArrayPtr(self);
+  mxArray *ptr = mxArrayPtr(self);
   info->two = 2;
   info->nd = (int) mxGetNumberOfDimensions(ptr);
   info->typekind = mxClassID_to_Numpy_Typekind(mxGetClassID(ptr));
@@ -894,26 +828,24 @@ static PyModuleDef mxmodule_def = {
 #endif
 
 #ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC PyObject*
+#define PyMODINIT_FUNC PyObject *
 #endif
-PyMODINIT_FUNC
-initmxmodule(void)
-{
+PyMODINIT_FUNC initmxmodule(void) {
   mxArrayType.tp_new = PyType_GenericNew;
   /*mxArrayType.tp_as_number = mxArray_numbermethods;*/
 
   #if PY_VERSION_HEX < PY3K_VERSION_HEX
   if (PyType_Ready(&mxArrayType) < 0) return;
-  PyObject* m = Py_InitModule3("matlab.mx", mx_methods, "MATLAB matrix API module");
+  PyObject *m = Py_InitModule3("matlab.mx", mx_methods, "MATLAB matrix API module");
   if (!m) return;
   #else
   if (PyType_Ready(&mxArrayType) < 0) return NULL;
-  PyObject* m = PyModule_Create(&mxmodule_def);
+  PyObject *m = PyModule_Create(&mxmodule_def);
   if (!m) return NULL;
   #endif
 
   Py_INCREF(&mxArrayType);
-  PyModule_AddObject(m, "Array", (PyObject*) &mxArrayType);
+  PyModule_AddObject(m, "Array", (PyObject *) &mxArrayType);
 
   PyModule_AddIntMacro(m, mxREAL);
   PyModule_AddIntMacro(m, mxCOMPLEX);
