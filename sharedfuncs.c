@@ -271,33 +271,30 @@ PyObject* Any_mxArray_to_PyObject(const mxArray* mxobj) {
 mxArray* Any_PyObject_to_mxArray(PyObject* pyobj) {
   if (!pyobj)
     return box(pyobj); /* Null pointer */
-  else if (PyBytes_Check(pyobj))
-    return PyBytes_to_mxChar(pyobj);
-  else if (PyTuple_Check(pyobj) || PyList_Check(pyobj))
-    return PySequence_to_mxCell(pyobj);
-  else if (PyLong_Check(pyobj)
-	   #if PY_VERSION_HEX < PY3K_VERSION_HEX
-	   || PyInt_Check(pyobj)
-	   #endif
-	   )
-    return PyObject_to_mxLong(pyobj);
-  else if (PyFloat_Check(pyobj))
-    return PyObject_to_mxDouble(pyobj);
-  else if (PyBool_Check(pyobj))
-    return PyObject_to_mxLogical(pyobj);
-  else if (Py_mxArray_Check(pyobj))
+  if (Py_mxArray_Check(pyobj))
     return mxArrayPtr(pyobj);
   else {
     PyObject* utils = PyImport_ImportModule("pymexutil");
-    PyObject* unpyed = PyObject_CallMethod(utils, "unpy", "O", pyobj);
-    if (!unpyed) PyErr_Clear();
-    else if (unpyed != pyobj) {
-      mxArray* retval = mxDuplicateArray(Any_PyObject_to_mxArray(unpyed));
+    PyObject* arg;
+    if (PyTuple_Check(pyobj)) arg = PyTuple_Pack(1, pyobj);
+    else {
+      arg = pyobj;
+      Py_INCREF(pyobj);
+    }
+    PyObject* unpyed = PyObject_CallMethod(utils, "unpy", "O", arg);
+    Py_DECREF(arg);
+    if (PyErr_Occurred()) {
+      if (PyErr_ExceptionMatches(PyExc_NotImplementedError))
+	return boxb(pyobj);
+      else return NULL;
+    }
+    if (Py_mxArray_Check(unpyed)) {
+      mxArray* retval = mxDuplicateArray(mxArrayPtr(unpyed));
       PERSIST_ARRAY(retval);
       Py_DECREF(unpyed);
       return retval;
     }
-    return boxb(pyobj);
+    else return boxb(pyobj);
   }
 }
 

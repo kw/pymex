@@ -6,6 +6,7 @@ might want to have a look-see.
 '''
 
 import matlab.mx as mx
+import struct
 
 __unpy_registry = dict()
 def register_unpy(cls, func):
@@ -23,9 +24,8 @@ def unregister_unpy(cls):
     
 def unpy(obj):
     '''
-    Converts the given object to an mxArray, or perhaps
-    one step closer than it was. This is called by
-    Any_PyObject_to_mxArray in the C sources.
+    Converts the given object to an mxArray 
+    This is called by Any_PyObject_to_mxArray in the C sources.
 
     To make your types work with this, provide a
     __mxArray__() method. You may be able to inject
@@ -41,6 +41,52 @@ def unpy(obj):
             if cls in __unpy_registry:
                 return __unpy_registry[cls](obj)
     raise NotImplementedError
+
+## unpy handlers
+
+def str_unpy(self):
+    '''
+    Converts str to mxCHAR_CLASS via libmx
+    '''
+    return mx.create_string(self, wrap=True)
+register_unpy(str, str_unpy)
+
+
+def seq_to_cell(self):
+    '''
+    Given an iterable of known length, produce a cell array.
+    This is not done recursively. We would need to check for
+    recursive structure in that case.
+    '''
+    size = (1, len(self))
+    cell = mx.create_cell_array(size, wrap=True)
+    i = 0
+    for item in self:
+        cell[i] = item
+        i += 1
+    return cell
+
+register_unpy(tuple, seq_to_cell)
+register_unpy(list, seq_to_cell)
+
+def _make_scalar_unpy(scalartype, fmt, mxclass):
+    def _scalar_unpy(self):
+        byteval = struct.pack(fmt, self)
+        scalar = mx.create_numeric_array(dims=(1,1), mxclass=mxclass, wrap=True)
+        assert len(byteval) == scalar._get_element_size(), "Datatype size mismatch"
+        scalar._set_element(byteval)
+        return scalar
+    register_unpy(scalartype, _scalar_unpy)
+
+try: 
+    _make_scalar_unpy(long, "q", mx.mxINT64_CLASS)
+    _make_scalar_unpy(int, "i", mx.mxINT32_CLASS)
+except: # Python 3 does not have longs. ints are long when necessary.
+    _make_scalar_unpy(int, "q", mx.mxINT64_CLASS)
+
+_make_scalar_unpy(float, "d", mx.mxDOUBLE_CLASS)
+_make_scalar_unpy(bool, "?", mx.mxLOGICAL_CLASS)
+
 
 ## Some sample unpy stuff for numpy 
 try: 

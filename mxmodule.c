@@ -5,6 +5,20 @@
 #import "pymex.h"
 #import "structmember.h"
 
+static PyObject* dowrap(PyObject* cobj) {
+  PyObject* nargs = PyTuple_New(0);
+  PyObject* kwargs = PyDict_New();
+  PyDict_SetItemString(kwargs, "mxpointer", cobj);
+  PyObject* arraycls = Find_mltype_for(mxArrayPtr(cobj));
+  /* TODO: There is probably a better way to do this... */
+  PyObject* ret = PyObject_Call(arraycls, nargs, kwargs);
+  Py_DECREF(nargs);
+  Py_DECREF(kwargs);
+  Py_DECREF(arraycls);
+  return ret;
+}
+
+
 #define DIMS_FROM_SEQ(A)						\
   mwSize ndim = PySequence_Size(A);					\
   mwSize dims[ndim];							\
@@ -27,90 +41,111 @@
 static PyObject*
 CreateCellArray(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"dims", NULL};
+  static char* kwlist[] = {"dims", "wrap", NULL};
   PyObject* pydims = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist,
-				   &pydims))
+  int wrap = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
+				   &pydims, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray* cell = mxCreateCellArray(ndim, dims);
-  return mxArrayPtr_New(cell);
+  if (wrap)    
+    return dowrap(mxArrayPtr_New(cell));
+  else
+    return mxArrayPtr_New(cell);
 }
 
 static PyObject*
 CreateNumericArray(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"dims", "mxclass", "complexity", NULL};
+  static char* kwlist[] = {"dims", "mxclass", "complexity", "wrap", NULL};
   PyObject* pydims = NULL;
   mxClassID class = mxDOUBLE_CLASS;
   mxComplexity complexity = mxREAL;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oii", kwlist, 
-				    &pydims, &class, &complexity))
+  int wrap = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oiii", kwlist, 
+				   &pydims, &class, &complexity, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray* array = mxCreateNumericArray(ndim, dims, class, complexity);
-  return mxArrayPtr_New(array);
+  if (wrap)
+    return dowrap(mxArrayPtr_New(array));
+  else
+    return mxArrayPtr_New(array);
 }
 
 /* TODO: Allow field initialization. */
 static PyObject*
 CreateStructArray(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"dims", NULL};
+  static char* kwlist[] = {"dims", "wrap", NULL};
   PyObject* pydims = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist,
-				   &pydims))
+  int wrap = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
+				   &pydims, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_Pack(1, PyLong_FromLong(1));
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray* array = mxCreateStructArray(ndim, dims, 0, NULL);
-  return mxArrayPtr_New(array);
+  if (wrap)
+    return dowrap(mxArrayPtr_New(array));
+  else
+    return mxArrayPtr_New(array);
 }
 
 static PyObject*
 CreateCharArray(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"dims", NULL};
+  static char* kwlist[] = {"dims", "wrap", NULL};
   PyObject* pydims = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist,
-				   &pydims))
+  int wrap = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
+				   &pydims, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray* array = mxCreateCharArray(ndim, dims);
-  return mxArrayPtr_New(array);
+  if (wrap)
+    return dowrap(mxArrayPtr_New(array));
+  else
+    return mxArrayPtr_New(array);
 }
 
 static PyObject*
 CreateString(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"string", NULL};
+  static char* kwlist[] = {"string", "wrap", NULL};
   char* string = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist,
-				   &string))
+  int wrap = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwlist,
+				   &string, &wrap))
     return NULL;
   mxArray* array = mxCreateString((const char*) string);
-  return mxArrayPtr_New(array);
+  if (wrap)
+    return dowrap(mxArrayPtr_New(array));
+  else
+    return mxArrayPtr_New(array);
 }
 
 static PyObject*
 CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char* kwlist[] = {"name", "closure", NULL};
+  static char* kwlist[] = {"name", "closure", "wrap", NULL};
   char* name = NULL;
   char* closure = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ss", kwlist,
-				   &name, &closure))
+  int wrap = 0;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssi", kwlist,
+				   &name, &closure, &wrap))
     return NULL;
   PyObject* evalstring;
   if (name && closure)
@@ -135,7 +170,10 @@ CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
     return PyErr_Format(PyExc_RuntimeError, "Bad function handle or something");
   if (mxGetClassID(argout[0]) != mxFUNCTION_CLASS)
     return PyErr_Format(PyExc_ValueError, "Returned value was not a function handle?");  
-  return mxArrayPtr_New(argout[0]);
+  if (wrap)
+    return dowrap(mxArrayPtr_New(argout[0]));
+  else
+    return mxArrayPtr_New(argout[0]);
   #else
   Py_DECREF(evalstring);
   return PyErr_Format(PyExc_RuntimeError, "Function handles can't presently be instantiated outside of MATLAB.");
@@ -148,16 +186,7 @@ wrap_pycobject(PyObject* self, PyObject* args)
   PyObject* cobj = NULL;
   if (!PyArg_ParseTuple(args, "O", &cobj))
     return NULL;
-  PyObject* nargs = PyTuple_New(0);
-  PyObject* kwargs = PyDict_New();
-  PyDict_SetItemString(kwargs, "mxpointer", cobj);
-  PyObject* arraycls = Find_mltype_for(mxArrayPtr(cobj));
-  /* TODO: There is probably a better way to do this... */
-  PyObject* ret = PyObject_Call(arraycls, nargs, kwargs);
-  Py_DECREF(nargs);
-  Py_DECREF(kwargs);
-  Py_DECREF(arraycls);
-  return ret;
+  return dowrap(cobj);
 }
 
 static PyMethodDef mx_methods[] = {
@@ -533,6 +562,60 @@ mxArray_repr(PyObject* self)
   return mxArray_repr_helper(self);     
 }
 
+static void _dataptr_destructor(void* data, void* desc)
+{
+  Py_XDECREF((PyObject*) desc);
+}
+static PyObject*
+mxArray_get_data(PyObject* self)
+{
+  mxArray* ptr = mxArrayPtr(self);
+  void* data = mxGetData(ptr);
+  Py_INCREF(self);
+  PyObject* cobj = PyCObject_FromVoidPtrAndDesc(data, self, _dataptr_destructor);
+  return cobj;
+}
+
+static PyObject*
+mxArray_get_element(PyObject* self, PyObject* args)
+{
+  Py_ssize_t index = 0;
+  if (!PyArg_ParseTuple(args, "|n", &index)) return NULL;
+  mxArray* ptr = mxArrayPtr(self);
+  Py_ssize_t numel = (Py_ssize_t) mxGetNumberOfElements(ptr);
+  Py_ssize_t elsize = (Py_ssize_t) mxGetElementSize(ptr);
+  if (index < 0 || index >= numel)
+    PyErr_Format(PyExc_IndexError, "Array index out of bounds (0<=%zd<%zd)", index, numel);
+  char* data = (char*) mxGetData(ptr);
+  data += elsize*index;
+  return PyBytes_FromStringAndSize(data, elsize);
+}
+
+static PyObject*
+mxArray_set_element(PyObject* self, PyObject* args, PyObject* kw)
+{
+  static char* kwlist[] = {"bytes", "index", NULL};
+  Py_ssize_t index = 0;
+  PyObject* bytes = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "S|n", kwlist, &bytes, &index)) return NULL;
+  mxArray* ptr = mxArrayPtr(self);
+  Py_ssize_t numel = (Py_ssize_t) mxGetNumberOfElements(ptr);
+  Py_ssize_t elsize = (Py_ssize_t) mxGetElementSize(ptr);
+  if (index < 0 || index >= numel)
+    PyErr_Format(PyExc_IndexError, "Array index out of bounds (0<=%zd<%zd)", index, numel);
+  Py_ssize_t bytesize = PyBytes_Size(bytes);
+  if (bytesize != elsize)
+    PyErr_Format(PyExc_ValueError, "Bytes size must equal element size (%zd != %zd)", 
+		 bytesize, elsize);
+  char* bytestring = PyBytes_AsString(bytes);
+  char* data = (char*) mxGetData(ptr);
+  data += elsize*index;
+  int i;
+  for (i=0; i < elsize; i++)
+    data[i] = bytestring[i];
+  Py_RETURN_NONE;
+}
+
 /* This definition shamelessly copied from NumPy to remove dependence on it for building. */
 typedef struct {
   int two;              /* contains the integer 2 -- simple sanity check */
@@ -621,6 +704,12 @@ static PyMethodDef mxArray_methods[] = {
    "Returns a tuple containing the sizes of each dimension"},
   {"_get_element_size", (PyCFunction)mxArray_mxGetElementSize, METH_NOARGS,
    "Returns the size of each element in the array, in bytes."},
+  {"_get_data", (PyCFunction)mxArray_get_data, METH_NOARGS,
+   "Returns a C object pointing to this array's data segment."},
+  {"_get_element", (PyCFunction)mxArray_get_element, METH_VARARGS,
+   "Gets a particular element from the array as a byte string. Default index=0"},
+  {"_set_element", (PyCFunction)mxArray_set_element, METH_VARARGS | METH_KEYWORDS,
+   "Given a string of bytes, sets the specified element to it. Default index=0"},
   {NULL}
 };
 
