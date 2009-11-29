@@ -124,7 +124,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
   }
   else if (mxIsChar(prhs[0])) {
-    char* cmdstring = mxArrayToString(prhs[0]);
+    char *cmdstring = mxArrayToString(prhs[0]);
     if (!cmdstring) {
       mexErrMsgIdAndTxt("pymex:badstring", 
 			"Could not extract the command string.");    
@@ -134,7 +134,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	mexErrMsgIdAndTxt("pymex:nohelp", 
 			  "Please specify a PYMEX command to get help for it.");
       }
-      char* helpname = mxArrayToString(prhs[1]);
+      char *helpname = mxArrayToString(prhs[1]);
       if (!helpname) {
 	mexErrMsgIdAndTxt("pymex:badstring", 
 			  "Could not extract the command string.");
@@ -179,7 +179,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   /* Detect and pass on python errors */
-  PyObject* err = PyErr_Occurred();
+  PyObject *err = PyErr_Occurred();
   if (err) {
     PyObject *err_type, *err_value, *err_traceback;
     PyErr_Fetch(&err_type, &err_value, &err_traceback);
@@ -187,18 +187,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       err_value = PyUnicode_FromString("<no value>");
     /* FIXME: This seems a tad overcomplicated for some 
        simple string concatentaion. */
-    PyObject* pyid = PyUnicode_FromString("Python:"); 
-    PyObject* errname = PyObject_GetAttrString(err_type, "__name__");
-    PyObject* msgid = PyUnicode_Concat(pyid, errname);
+    PyObject *pyid = PyUnicode_FromString("Python:"); 
+    PyObject *errname = PyObject_GetAttrString(err_type, "__name__");
+    PyObject *msgid = PyUnicode_Concat(pyid, errname);
     Py_DECREF(pyid);
     Py_DECREF(errname);
-    PyObject* tuple = Py_BuildValue("ON", msgid, PyObject_Str(err_value));
-    PyObject* format = PyUnicode_FromString("%s -> %s\n");
-    PyObject* pymsg = PyUnicode_Format(format, tuple);
-    PyObject* b_id = PyUnicode_AsASCIIString(msgid);
-    PyObject* b_msg = PyUnicode_AsASCIIString(pymsg);
-    char* id = PyBytes_AsString(b_id);
-    char* msg = PyBytes_AsString(b_msg);
+    PyObject *tuple = Py_BuildValue("ON", msgid, PyObject_Str(err_value));
+    PyObject *format = PyUnicode_FromString("%s -> %s\n");
+    PyObject *pymsg = PyUnicode_Format(format, tuple);
+    PyObject *b_id = PyUnicode_AsASCIIString(msgid);
+    PyObject *b_msg = PyUnicode_AsASCIIString(pymsg);
+    char *id = PyBytes_AsString(b_id);
+    char *msg = PyBytes_AsString(b_msg);
     Py_DECREF(b_id);
     Py_DECREF(b_msg);
     Py_DECREF(msgid);
