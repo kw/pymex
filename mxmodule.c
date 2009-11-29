@@ -157,26 +157,22 @@ CreateFunctionHandle(PyObject* self, PyObject* args, PyObject* kwargs)
   else
     return PyErr_Format(PyExc_ValueError, "Must provide a string containing a name or a MATLAB closure.");
   #if MATLAB_MEX_FILE
-  mxArray* argin[3];
-  mxArray* argout[1];
-  argin[0] = mxCreateString("evalin");
-  argin[1] = mxCreateString("base");
-  argin[2] = mxCreateString(PyBytes_AsString(evalstring));
-  int err = mexCallMATLAB(1,argout, 3, argin, "feval");
-  int i;
-  for (i=0; i<3; i++) mxDestroyArray(argin[i]);
+  PyObject* result = PyObject_CallMethod(mexmodule, "eval", "O", evalstring);
   Py_DECREF(evalstring);
-  if (err) /* TODO: Get some code to translate MATLAB errors. */
-    return PyErr_Format(PyExc_RuntimeError, "Bad function handle or something");
-  if (mxGetClassID(argout[0]) != mxFUNCTION_CLASS)
+  if (!result) return NULL;
+  if (mxGetClassID(mxArrayPtr(result)) != mxFUNCTION_CLASS)
     return PyErr_Format(PyExc_ValueError, "Returned value was not a function handle?");  
   if (wrap)
-    return dowrap(mxArrayPtr_New(argout[0]));
-  else
-    return mxArrayPtr_New(argout[0]);
+    return result;
+  else {
+    PyObject* cobj = PyObject_GetAttrString(result, "_mxptr");
+    Py_DECREF(result);    
+    return cobj;
+  }
   #else
   Py_DECREF(evalstring);
-  return PyErr_Format(PyExc_RuntimeError, "Function handles can't presently be instantiated outside of MATLAB.");
+  return PyErr_String(MATLABError, "Function handles can't presently "
+		      "be instantiated outside of MATLAB.");
   #endif
 }
 
