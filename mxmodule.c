@@ -463,9 +463,17 @@ static PyObject *mxArray_index(PyObject *self) {
   return mxArray_long(self);
 }
 
+static int mxArray_bool(PyObject *self) {
+  mxArray *ptr = mxArrayPtr(self);
+  if (!ptr || mxIsEmpty(ptr)) return 0;
+  else if (mxIsNumeric(ptr) && mxGetNumberOfElements(ptr) == 1)
+    return mxGetScalar(ptr) != 0.0;
+  else return 1;
+}
 
-/* These two are helper methods. The stringifier has to talk to MATLAB, so it might not be available. Because
-   of this, str and repr must try their preferences and fall back on the simple repr if necessary. */
+/* These two are helper methods. The stringifier has to talk to MATLAB, 
+   so it might not be available. Because of this, str and repr must try 
+   their preferences and fall back on the simple repr if necessary. */
 static PyObject *mxArray_repr_helper(PyObject *self) {
   mxArray *ptr = mxArrayPtr(self);
   return PyBytes_FromFormat("<%s at %p>", mxGetClassName(ptr), ptr);
@@ -661,7 +669,7 @@ static PyNumberMethods mxArray_numbermethods = {
   0, /*unaryfunc nb_negative;*/
   0, /*unaryfunc nb_positive;*/
   0, /*unaryfunc nb_absolute;*/
-  0, /*inquiry nb_nonzero;     */
+  mxArray_bool, /*inquiry nb_nonzero;     */
   0, /*unaryfunc nb_invert;*/
   0, /*binaryfunc nb_lshift;*/
   0, /*binaryfunc nb_rshift;*/
@@ -702,7 +710,7 @@ static PyNumberMethods mxArray_numbermethods = {
   0, /* unaryfunc nb_negative */
   0, /* unaryfunc nb_positive */
   0, /* unaryfunc nb_absolute */
-  0, /* inquiry nb_bool */
+  mxArray_bool, /* inquiry nb_bool */
   0, /* unaryfunc nb_invert */
   0, /* binaryfunc nb_lshift */
   0, /* binaryfunc nb_rshift */
