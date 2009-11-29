@@ -23,15 +23,12 @@ static PyModuleDef matlabmodule_def = {
 #ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
 #define PyMODINIT_FUNC PyObject*
 #endif
-PyMODINIT_FUNC
-initmatlabmodule(void)
-{
-
+PyMODINIT_FUNC initmatlabmodule(void) {
   #if PY_VERSION_HEX < PY3K_VERSION_HEX
-  PyObject* m = Py_InitModule3("matlab", matlab_methods, "MATLAB C-API module container");
+  PyObject *m = Py_InitModule3("matlab", matlab_methods, "MATLAB C-API module container");
   if (!m) return;
   #else
-  PyObject* m = PyModule_Create(&matlabmodule_def);
+  PyObject *m = PyModule_Create(&matlabmodule_def);
   if (!m) return NULL;
   #endif
 
