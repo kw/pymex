@@ -32,7 +32,7 @@ PYMEX(DELETE_OBJ, 1,1,
       "associated with it. See MEXLOCK.",
       {
 	if (!mxIsPyNull(prhs[0])) {
-	  PyObject* pyobj = unbox(prhs[0]);
+	  PyObject *pyobj = unbox(prhs[0]);
 	  Py_DECREF(pyobj);
 	  mexUnlock();
 	}
@@ -51,8 +51,8 @@ PYMEX(IMPORT, 1,1,
       {
 	if (!mxIsChar(prhs[0]))
 	  mexErrMsgTxt("import argument not string.");
-	PyObject* name = mxChar_to_PyBytes(prhs[0]);
-	PyObject* pyobj = PyImport_Import(name);
+	PyObject *name = mxChar_to_PyBytes(prhs[0]);
+	PyObject *pyobj = PyImport_Import(name);
 	Py_DECREF(name);
 	plhs[0] = box(pyobj);
       })
@@ -78,8 +78,8 @@ PYMEX(TO_BOOL, 1,1,
   PYMEX(name, 2,2,					\
 	"Binary operator: " #pyfun,			\
 	{						\
-	  PyObject* L = unboxn(prhs[0]);		\
-	  PyObject* R = unboxn(prhs[1]);		\
+	  PyObject *L = unboxn(prhs[0]);		\
+	  PyObject *R = unboxn(prhs[1]);		\
 	  plhs[0] = box(pyfun(L,R));			\
 	  Py_XDECREF(L);				\
 	  Py_XDECREF(R);				\
@@ -102,7 +102,7 @@ PYMEX_BIN_OP(RSHIFT, PyNumber_Rshift)
   PYMEX(name, 1,1,				\
 	"Unary operator: " #pyfun,		\
 	{					\
-	  PyObject* O = unboxn(prhs[0]);	\
+	  PyObject *O = unboxn(prhs[0]);	\
 	  plhs[0] = box(pyfun(O));		\
 	  Py_XDECREF(O);			\
 	})
@@ -117,8 +117,8 @@ PYMEX_UNARY_OP(INVERT, PyNumber_Invert)
   PYMEX(name, 2,2,						\
 	"Comparison operator: " #name,				\
 	{							\
-	  PyObject* A = unboxn(prhs[0]);			\
-	  PyObject* B = unboxn(prhs[1]);			\
+	  PyObject *A = unboxn(prhs[0]);			\
+	  PyObject *B = unboxn(prhs[1]);			\
 	  plhs[0] = box(PyObject_RichCompare(A, B, Py_##name));	\
 	  Py_XDECREF(A);					\
 	  Py_XDECREF(B);					\
@@ -137,9 +137,9 @@ PYMEX(POWER, 2,3,
       "Python's power operator. Has an optional third argument, "
       "see the python docs for details. ",
       {
-	PyObject* x = unboxn(prhs[0]);
-	PyObject* y = unboxn(prhs[1]);
-	PyObject* z;
+	PyObject *x = unboxn(prhs[0]);
+	PyObject *y = unboxn(prhs[1]);
+	PyObject *z;
 	if (nrhs != 3) {
 	  z = Py_None;
 	  Py_INCREF(z);
@@ -165,7 +165,7 @@ PYMEX(TO_STR, 1,1,
 PYMEX(DIR, 1,1, 
       "Retrieves the object's attribute directory.",
       {
-	PyObject* pyobj;
+	PyObject *pyobj;
 	pyobj = PyObject_Dir(unbox(prhs[0]));
 	plhs[0] = box(pyobj);
       })
@@ -174,7 +174,7 @@ PYMEX(DIR, 1,1,
 PYMEX(GET_TYPE, 1,1, 
       "Retrieves the object's type.",
       {
-	PyObject* pyobj = unbox(prhs[0]);
+	PyObject *pyobj = unbox(prhs[0]);
 	plhs[0] = box(PyObject_Type(pyobj));
       })
 
@@ -190,23 +190,23 @@ PYMEX(CALL, 2,3,
       "of arguments. An optional third argument is a dict of keyword arguments. "
       "No output unpacking is done. The standard object wrapper class implements that.",
       {
-	PyObject* callobj = unbox(prhs[0]);
+	PyObject *callobj = unbox(prhs[0]);
 	if (!PyCallable_Check(callobj))
 	  mexErrMsgIdAndTxt("python:NotCallable", "tried to call object which is not callable.");
-	PyObject* args = NULL;
+	PyObject *args = NULL;
 	if (mxIsCell(prhs[1]))
 	  args = mxCell_to_PyTuple(prhs[1]);
 	else
 	  args = unbox(prhs[1]);
 	if (!args || !PyTuple_Check(args))
 	  mexErrMsgIdAndTxt("python:NotTuple", "args must be a tuple");
-	PyObject* kwargs = NULL;
+	PyObject *kwargs = NULL;
 	if (nrhs > 2) {
 	  kwargs = unbox(prhs[2]);
 	  if (kwargs && !PyDict_Check(kwargs))
 	    mexErrMsgIdAndTxt("python:NoKWargs", "kwargs must be a dict or null");
 	}
-	PyObject* result = PyObject_Call(callobj, args, kwargs);
+	PyObject *result = PyObject_Call(callobj, args, kwargs);
 	plhs[0] = box(result);
       })
 
@@ -220,8 +220,8 @@ PYMEX(GET_ATTR, 2,2,
       "Gets the named attribute from the object.",
       {
 	/* Perhaps we should use GetAttrString instead... */
-	PyObject* pyobj = unbox(prhs[0]);
-	PyObject* name = unboxn(prhs[1]);
+	PyObject *pyobj = unbox(prhs[0]);
+	PyObject *name = unboxn(prhs[1]);
 	plhs[0] = box(PyObject_GetAttr(pyobj, name));
 	Py_XDECREF(name);
       })
@@ -229,9 +229,9 @@ PYMEX(GET_ATTR, 2,2,
 PYMEX(SET_ATTR, 3,3, 
       "Sets the named attribute. Argument order is name, value.",
       {    
-	PyObject* pyobj = unbox(prhs[0]);
-	PyObject* key = unboxn(prhs[1]);
-	PyObject* val = unboxn(prhs[2]);
+	PyObject *pyobj = unbox(prhs[0]);
+	PyObject *key = unboxn(prhs[1]);
+	PyObject *val = unboxn(prhs[2]);
 	PyObject_SetAttr(pyobj, key, val);
 	Py_XDECREF(key);
 	Py_XDECREF(val);
@@ -240,8 +240,8 @@ PYMEX(SET_ATTR, 3,3,
 PYMEX(HAS_ATTR, 2, 2, 
       "Asks the object whether it has a particular attribute.",
       {
-	PyObject* pyobj = unbox(prhs[0]);
-	PyObject* name = unboxn(prhs[1]);
+	PyObject *pyobj = unbox(prhs[0]);
+	PyObject *name = unboxn(prhs[1]);
 	plhs[0] = mxCreateLogicalScalar(PyObject_HasAttr(pyobj, name));
 	Py_XDECREF(name);
       })
@@ -249,8 +249,8 @@ PYMEX(HAS_ATTR, 2, 2,
 PYMEX(GET_ITEM, 2,2, 
       "Retrieve an object using the given key.",
       {
-	PyObject* pyobj = unbox(prhs[0]);
-	PyObject* key = unboxn(prhs[1]);
+	PyObject *pyobj = unbox(prhs[0]);
+	PyObject *key = unboxn(prhs[1]);
 	plhs[0] = box(PyObject_GetItem(pyobj, key));
 	Py_XDECREF(key);
       })
@@ -258,9 +258,9 @@ PYMEX(GET_ITEM, 2,2,
 PYMEX(SET_ITEM, 3,3, 
       "Sets an object using a given key. Argument order is key, value.",
       {
-	PyObject* pyobj = unbox(prhs[0]);
-	PyObject* key = unboxn(prhs[1]);
-	PyObject* val = unboxn(prhs[2]);
+	PyObject *pyobj = unbox(prhs[0]);
+	PyObject *key = unboxn(prhs[1]);
+	PyObject *val = unboxn(prhs[2]);
 	PyObject_SetItem(pyobj, key, val);
 	Py_XDECREF(key);
 	Py_XDECREF(val);
@@ -295,7 +295,7 @@ PYMEX(TO_MXARRAY, 1,1,
       "Attempts to coerce a Python object to an appropriate MATLAB type.",
       {
 	if (!mxIsPyObject(prhs[0]))
-	  plhs[0] = (mxArray*) prhs[0];
+	  plhs[0] = (mxArray *) prhs[0];
 	else
 	  plhs[0] = Any_PyObject_to_mxArray(unbox(prhs[0]));
       })
