@@ -30,13 +30,13 @@
 #if MATLAB_MEX_FILE
 #include <mex.h>
 
-static PyObject* m_printf(PyObject* self, PyObject* args) {
-  PyObject* format = PySequence_GetItem(args, 0);
+static PyObject *m_printf(PyObject *self, PyObject *args) {
+  PyObject *format = PySequence_GetItem(args, 0);
   Py_ssize_t arglength = PySequence_Size(args);
-  PyObject* tuple = PySequence_GetSlice(args, 1, arglength+1);
-  PyObject* out = PyUnicode_Format(format, tuple);
-  PyObject* b_out = PyUnicode_AsASCIIString(out);
-  char* outstr = PyBytes_AsString(b_out);
+  PyObject *tuple = PySequence_GetSlice(args, 1, arglength+1);
+  PyObject *out = PyUnicode_Format(format, tuple);
+  PyObject *b_out = PyUnicode_AsASCIIString(out);
+  char *outstr = PyBytes_AsString(b_out);
   mexPrintf(outstr);
   Py_DECREF(out);
   Py_DECREF(b_out);
@@ -45,17 +45,17 @@ static PyObject* m_printf(PyObject* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
-static PyObject* _raiselasterror(PyObject* self) {
-  mxArray* argin;
-  mxArray* argout;
+static PyObject *_raiselasterror(PyObject *self) {
+  mxArray *argin;
+  mxArray *argout;
   argin = mxCreateString("reset");
   mexSetTrapFlag(1);
   int retval = mexCallMATLAB(1, &argout, 1, &argin, "lasterror");
   if (!retval) {
-    char* id = mxArrayToString(mxGetField(argout, 0, "identifier"));
-    char* msg = mxArrayToString(mxGetField(argout, 0, "message"));
-    PyObject* stack = Any_mxArray_to_PyObject(mxGetField(argout, 0, "stack"));
-    PyObject* errval = Py_BuildValue("(ssO)", id, msg, stack);
+    char *id = mxArrayToString(mxGetField(argout, 0, "identifier"));
+    char *msg = mxArrayToString(mxGetField(argout, 0, "message"));
+    PyObject *stack = Any_mxArray_to_PyObject(mxGetField(argout, 0, "stack"));
+    PyObject *errval = Py_BuildValue("(ssO)", id, msg, stack);
     PyErr_SetObject(MATLABError, errval);
     mxFree(id);
     mxFree(msg);
@@ -69,16 +69,16 @@ static PyObject* _raiselasterror(PyObject* self) {
   return NULL;
 }
 
-static PyObject* m_eval(PyObject* self, PyObject* args) {
-  char* evalstring = NULL;
+static PyObject *m_eval(PyObject *self, PyObject *args) {
+  char *evalstring = NULL;
   if (!PyArg_ParseTuple(args, "s", &evalstring))
     return NULL;
   /* would prefer to use mexCallMATLABWithTrap, but not in 2008a */
   mexSetTrapFlag(1);
-  mxArray* evalarray[2];
+  mxArray *evalarray[2];
   evalarray[0] = mxCreateString("base");
   evalarray[1] = mxCreateString(evalstring);
-  mxArray* out = NULL;
+  mxArray *out = NULL;
   int retval = mexCallMATLAB(1, &out, 2, evalarray, "evalin");
   mxDestroyArray(evalarray[0]);
   mxDestroyArray(evalarray[1]);
@@ -89,10 +89,10 @@ static PyObject* m_eval(PyObject* self, PyObject* args) {
   }
 }
 
-static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
+static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *kwlist[] = {"nargout",NULL};
   int nargout = -1;
-  PyObject* fakeargs = PyTuple_New(0);
+  PyObject *fakeargs = PyTuple_New(0);
   if (!PyArg_ParseTupleAndKeywords(fakeargs, kwargs, "|i", kwlist, &nargout))
     return NULL;
   Py_DECREF(fakeargs);
@@ -111,7 +111,7 @@ static PyObject* m_call(PyObject* self, PyObject* args, PyObject* kwargs) {
     return _raiselasterror(NULL);
   else {
     if (tupleout) {
-      PyObject* outseq = PyTuple_New(nargout);
+      PyObject *outseq = PyTuple_New(nargout);
       for (i=0; i<nargout; i++) {
 	PyTuple_SetItem(outseq, i, Any_mxArray_to_PyObject(outargs[i]));
       }
@@ -151,14 +151,11 @@ static PyModuleDef mexmodule_def = {
 #endif
 
 #ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC PyObject*
+#define PyMODINIT_FUNC PyObject *
 #endif
-PyMODINIT_FUNC
-initmexmodule(void)
-{
-
+PyMODINIT_FUNC initmexmodule(void) {
   #if PY_VERSION_HEX < PY3K_VERSION_HEX
-  PyObject* m = Py_InitModule3("matlab.mex", mex_methods, 
+  PyObject *m = Py_InitModule3("matlab.mex", mex_methods, 
     #if MATLAB_MEX_FILE
     "MATLAB Extension API module"
     #else
@@ -167,15 +164,15 @@ initmexmodule(void)
 			       );
   if (!m) return;
   #else
-  PyObject* m = PyModule_Create(&mexmodule_def);
+  PyObject *m = PyModule_Create(&mexmodule_def);
   if (!m) return NULL;
   #endif
 
   mexmodule = m;
   
-  PyObject* sys = PyImport_AddModule("sys");
-  PyObject* path = PyObject_GetAttrString(sys, "path");
-  PyObject* pymexpath = PyObject_CallMethod(m, "eval", "s", "fileparts(which('pymex'));");
+  PyObject *sys = PyImport_AddModule("sys");
+  PyObject *path = PyObject_GetAttrString(sys, "path");
+  PyObject *pymexpath = PyObject_CallMethod(m, "eval", "s", "fileparts(which('pymex'));");
   if (PyList_Append(path, pymexpath) < 0) PyErr_Clear();
 
   #if PY_VERSION_HEX >= PY3K_VERSION_HEX
