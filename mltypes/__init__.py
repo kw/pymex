@@ -1,8 +1,8 @@
 # Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
 # For full license details, see the LICENSE file.
 
-from matlab import mx
-from matlab import mex
+import mx
+import mex
 import numbers
 import sys
 

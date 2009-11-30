@@ -14,7 +14,7 @@ static PyMethodDef mat_methods[] = {
 #define PyMODINIT_FUNC void
 #endif
 PyMODINIT_FUNC initmatmodule(void) {
-  PyObject *m = Py_InitModule3("matlab.mat", mat_methods, 
+  PyObject *m = Py_InitModule3("mat", mat_methods, 
 			       "MATLAB MAT-file interface (placeholder)");
   if (!m) return;
 

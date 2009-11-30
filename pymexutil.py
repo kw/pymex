@@ -5,7 +5,7 @@ who need to modify some behaviors (particularly with type conversion)
 might want to have a look-see. 
 '''
 
-import matlab.mx as mx
+import mx
 import struct
 
 __unpy_registry = dict()
@@ -79,13 +79,13 @@ def _make_scalar_unpy(scalartype, fmt, mxclass):
     register_unpy(scalartype, _scalar_unpy)
 
 try: 
-    _make_scalar_unpy(long, "q", mx.mxINT64_CLASS)
-    _make_scalar_unpy(int, "i", mx.mxINT32_CLASS)
+    _make_scalar_unpy(long, "q", mx.INT64)
+    _make_scalar_unpy(int, "i", mx.INT32)
 except: # Python 3 does not have longs. ints are long when necessary.
-    _make_scalar_unpy(int, "q", mx.mxINT64_CLASS)
+    _make_scalar_unpy(int, "q", mx.INT64)
 
-_make_scalar_unpy(float, "d", mx.mxDOUBLE_CLASS)
-_make_scalar_unpy(bool, "?", mx.mxLOGICAL_CLASS)
+_make_scalar_unpy(float, "d", mx.DOUBLE)
+_make_scalar_unpy(bool, "?", mx.LOGICAL)
 
 
 ## Some sample unpy stuff for numpy 
@@ -101,26 +101,26 @@ try:
         global __dtype_map
         if __dtype_map is None:
             __dtype_map = {
-                np.float64 : mx.mxDOUBLE_CLASS,
-                np.float32 : mx.mxSINGLE_CLASS,
-                np.int64 : mx.mxINT64_CLASS,
-                np.uint64 : mx.mxUINT64_CLASS,
-                np.int32 : mx.mxINT32_CLASS,
-                np.uint32 : mx.mxUINT32_CLASS,
-                np.int16 : mx.mxINT16_CLASS,
-                np.uint16 : mx.mxUINT16_CLASS,
-                np.int8 : mx.mxINT8_CLASS,
-                np.uint8 : mx.mxUINT8_CLASS,
-                np.bool8 : mx.mxLOGICAL_CLASS,
-                np.character : mx.mxCHAR_CLASS,
+                np.float64 : mx.DOUBLE,
+                np.float32 : mx.SINGLE,
+                np.int64 : mx.INT64,
+                np.uint64 : mx.UINT64,
+                np.int32 : mx.INT32,
+                np.uint32 : mx.UINT32,
+                np.int16 : mx.INT16,
+                np.uint16 : mx.UINT16,
+                np.int8 : mx.INT8,
+                np.uint8 : mx.UINT8,
+                np.bool8 : mx.LOGICAL,
+                np.character : mx.CHAR,
                 }
         # First handle the common cases
         try: return __dtype_map[dtype]
         except: pass
         # Make a vague attempt at providing something appropriate
-        if issubclass(dtype, np.floating): return mx.mxDOUBLE_CLASS
-        elif issubclass(dtype, np.unsignedinteger): return mx.mxUINT64_CLASS
-        elif issubclass(dtype, np.integer): return mx.mxINT64_CLASS
+        if issubclass(dtype, np.floating): return mx.DOUBLE
+        elif issubclass(dtype, np.unsignedinteger): return mx.UINT64
+        elif issubclass(dtype, np.integer): return mx.INT64
         else: raise TypeError, "Couldn't figure out an appropriate mxclass for dtype %r" % dtype
 
     def numpy_ndarray_unpy(self):

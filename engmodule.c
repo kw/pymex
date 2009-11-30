@@ -14,7 +14,7 @@ static PyMethodDef eng_methods[] = {
 #define PyMODINIT_FUNC void 
 #endif
 PyMODINIT_FUNC initengmodule(void) {
-  PyObject* m = Py_InitModule3("matlab.eng", eng_methods, 
+  PyObject* m = Py_InitModule3("eng", eng_methods, 
 			 "MATLAB Engine library, for spawning MATLAB processes. (placeholder)");
   if (!m) return;
 

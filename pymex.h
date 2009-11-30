@@ -73,15 +73,9 @@ PyObject *mexmodule = NULL;
 
 #ifndef MXMODULE
 extern PyObject *mxmodule;
-#else
-PyObject *mxmodule = NULL;
-#endif
-
-#ifndef MATLABMODULE
-extern PyObject *matlabmodule;
 extern PyObject *MATLABError;
 #else
-PyObject *matlabmodule = NULL;
+PyObject *mxmodule = NULL;
 PyObject *MATLABError = NULL;
 #endif
 

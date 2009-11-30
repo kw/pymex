@@ -72,7 +72,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (!Py_IsInitialized()) {
     Py_Initialize();
     PYMEX_DEBUG("[python: initialized]\n");
-    initmatlabmodule();
+    initmexmodule();
+    initmxmodule();
+    initmatmodule();  
+    initengmodule();
     mexAtExit(ExitFcn);
     /* FIXME: This is probably not something I can actually fix, but
        it should probably be mentioned as a known issue. MATLAB will

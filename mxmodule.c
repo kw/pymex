@@ -176,8 +176,8 @@ static PyMethodDef mx_methods[] = {
    "Initially populated by empty matrices."},
   {"create_numeric_array", (PyCFunction)CreateNumericArray, METH_VARARGS | METH_KEYWORDS,
    "Creates a numeric array with given tuple of dimensions. Specify class and complexity "
-   "with one of the enum constants (defaults are mx.mxDOUBLE_CLASS and mx.mxREAL, respectively). "
-   "Example: mx.create_numeric_array((5,4,2), mx.mxDOUBLE_CLASS, mx.mxREAL)"},
+   "with one of the enum constants (defaults are mx.DOUBLE and mx.REAL, respectively). "
+   "Example: mx.create_numeric_array((5,4,2), mx.DOUBLE, mx.REAL)"},
   {"create_struct_array", (PyCFunction)CreateStructArray, METH_VARARGS | METH_KEYWORDS, 
    "Creates a struct array with no fields."},
   {"create_char_array", (PyCFunction)CreateCharArray, METH_VARARGS | METH_KEYWORDS,
@@ -750,30 +750,38 @@ PyMODINIT_FUNC initmxmodule(void) {
   /*mxArrayType.tp_as_number = mxArray_numbermethods;*/
 
   if (PyType_Ready(&mxArrayType) < 0) return;
-  PyObject *m = Py_InitModule3("matlab.mx", mx_methods, "MATLAB matrix API module");
+  PyObject *m = Py_InitModule3("mx", mx_methods, "MATLAB matrix API module");
   if (!m) return;
 
+  MATLABError = PyErr_NewException("mx.MATLABError", NULL, NULL);
+  Py_INCREF(MATLABError);
+  PyModule_AddObject(m, "MATLABError", MATLABError);
+  
   Py_INCREF(&mxArrayType);
   PyModule_AddObject(m, "Array", (PyObject *) &mxArrayType);
 
-  PyModule_AddIntMacro(m, mxREAL);
-  PyModule_AddIntMacro(m, mxCOMPLEX);
-  PyModule_AddIntMacro(m, mxUNKNOWN_CLASS);
-  PyModule_AddIntMacro(m, mxCELL_CLASS);
-  PyModule_AddIntMacro(m, mxSTRUCT_CLASS);
-  PyModule_AddIntMacro(m, mxLOGICAL_CLASS);
-  PyModule_AddIntMacro(m, mxCHAR_CLASS);
-  PyModule_AddIntMacro(m, mxDOUBLE_CLASS);
-  PyModule_AddIntMacro(m, mxSINGLE_CLASS);
-  PyModule_AddIntMacro(m, mxINT8_CLASS);
-  PyModule_AddIntMacro(m, mxUINT8_CLASS);
-  PyModule_AddIntMacro(m, mxINT16_CLASS);
-  PyModule_AddIntMacro(m, mxUINT16_CLASS);
-  PyModule_AddIntMacro(m, mxINT32_CLASS);
-  PyModule_AddIntMacro(m, mxUINT32_CLASS);
-  PyModule_AddIntMacro(m, mxINT64_CLASS);
-  PyModule_AddIntMacro(m, mxUINT64_CLASS);
-  PyModule_AddIntMacro(m, mxFUNCTION_CLASS);
+
+#define ADD_MX_CONST(name) PyModule_AddIntConstant(m, #name, mx ## name)
+#define ADD_MX_CLASS(name) PyModule_AddIntConstant(m, #name, mx ## name ## _CLASS)
+
+  ADD_MX_CONST(REAL);
+  ADD_MX_CONST(COMPLEX);
+  ADD_MX_CLASS(UNKNOWN);
+  ADD_MX_CLASS(CELL);
+  ADD_MX_CLASS(STRUCT);
+  ADD_MX_CLASS(LOGICAL);
+  ADD_MX_CLASS(CHAR);
+  ADD_MX_CLASS(DOUBLE);
+  ADD_MX_CLASS(SINGLE);
+  ADD_MX_CLASS(INT8);
+  ADD_MX_CLASS(UINT8);
+  ADD_MX_CLASS(INT16);
+  ADD_MX_CLASS(UINT16);
+  ADD_MX_CLASS(INT32);
+  ADD_MX_CLASS(UINT32);
+  ADD_MX_CLASS(INT64);
+  ADD_MX_CLASS(UINT64);
+  ADD_MX_CLASS(FUNCTION);
 
   mxmodule = m;
 
