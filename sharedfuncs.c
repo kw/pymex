@@ -43,9 +43,9 @@ mxArray *box_by_type(PyObject *pyobj) {
   mxArray *box = NULL;
   mxArray *mxname;
   mxArray *which;
-  int ret = -1;
+  mxArray *err = NULL;
   if (!pyobj) {
-    ret = mexCallMATLAB(1,&box,0,NULL,PYMEX_MATLAB_VOIDPTR);
+    err = mexCallMATLABWithTrap(1,&box,0,NULL,PYMEX_MATLAB_VOIDPTR);
   }
   else {
     PyObject *type = (PyObject *) pyobj->ob_type;
@@ -58,7 +58,7 @@ mxArray *box_by_type(PyObject *pyobj) {
 	 Yo dawg.
       */
       PYMEX_DEBUG("Object is a type...\n");
-      mro = Py_BuildValue("(O)", &PyType_Type);
+      mro = PyTuple_Pack(1, &PyType_Type);
     }
     else {
       PYMEX_DEBUG("Object is not a type...\n");
@@ -66,7 +66,7 @@ mxArray *box_by_type(PyObject *pyobj) {
     }
     Py_ssize_t len = PySequence_Length(mro);
     Py_ssize_t i;
-    for (i=0; i<len && ret; i++) {
+    for (i=0; i<len; i++) {
       PyObject *item = PySequence_GetItem(mro, i);
       if (item == pyobj) {
 	PYMEX_DEBUG("Pointers match!?\n"); 
@@ -88,21 +88,25 @@ mxArray *box_by_type(PyObject *pyobj) {
       Py_DECREF(modname);
       Py_DECREF(item);
       mxname = mxCreateString(mlname);
-      mexCallMATLAB(1,&which,1,&mxname,"which");
+      mxArray *werr = mexCallMATLABWithTrap(1,&which,1,&mxname,"which");
       mxDestroyArray(mxname);
-      if (mxGetNumberOfElements(which) > 0) {
+      if (!werr && mxGetNumberOfElements(which) > 0) {
 	PYMEX_DEBUG("%s looks good, trying it...\n", mlname);
-	ret = mexCallMATLAB(1,&box,0,NULL,mlname);
+	err = mexCallMATLABWithTrap(1,&box,0,NULL,mlname);
+	mxDestroyArray(which);
+	if (!err) break;
       }
-      mxDestroyArray(which);
+      else {
+	mxDestroyArray(which);
+      }
     }
     Py_DECREF(mro);
-    if (ret) { /* none found, use sane default */
-      PYMEX_DEBUG("No reasonable box found.\n");
-      ret = mexCallMATLAB(1,&box,0,NULL,PYMEX_MATLAB_PYOBJECT);
+    if (err || !box) { /* none found, use sane default */
+      PYMEX_DEBUG("No reasonable box found, using default.\n");
+      err = mexCallMATLABWithTrap(1,&box,0,NULL,PYMEX_MATLAB_PYOBJECT);
     }
   }
-  if (ret || !box) {
+  if (err || !box) {
     PYMEX_DEBUG("Unable to find " PYMEX_MATLAB_PYOBJECT);
     PyErr_Format(MATLABError,"Unable to find %s", PYMEX_MATLAB_PYOBJECT);
     return NULL;
@@ -176,7 +180,7 @@ bool mxIsPyObject(const mxArray *mxobj) {
   mxArray *args[2];
   args[0] = (mxArray *) mxobj;
   args[1] = mxCreateString(PYMEX_MATLAB_VOIDPTR);
-  mexCallMATLAB(1,&boolobj,2,args,"isa");
+  mexCallMATLABWithTrap(1,&boolobj,2,args,"isa");
   mxDestroyArray(args[1]);
   return mxIsLogicalScalarTrue(boolobj);
 }
@@ -310,8 +314,7 @@ PyObject *Calculate_matlab_mro(mxArray *mxobj) {
   argin[1] = mxCreateLogicalScalar(1); /* addvirtual=true */
   argin[2] = mxCreateLogicalScalar(1); /* autosplit=true */
   mxArray *argout[1] = {NULL};
-  mexSetTrapFlag(1);
-  int err = mexCallMATLAB(1, argout, 3, argin, "mro");
+  mxArray *err = mexCallMATLABWithTrap(1, argout, 3, argin, "mro");
   if (err) return PyObject_CallMethod(mexmodule, "__raiselasterror", "()");
   else {
     PyObject *retval = mxCell_to_PyTuple_recursive(argout[0]);
@@ -322,8 +325,9 @@ PyObject *Calculate_matlab_mro(mxArray *mxobj) {
   }
 }
 
-/* Attempts to locate an appropriate subclass of mx.Array using the mltypes package.
-   If for some reason this fails, mx.Array is returned instead.
+/* Attempts to locate an appropriate subclass of mx.Array 
+   using the mltypes package. If for some reason this fails, 
+   mx.Array is returned instead.
  */
 PyObject *Find_mltype_for(mxArray *mxobj) {
   #define GET_MX_ARRAY_CLASS PyObject_GetAttrString(mxmodule, "Array")

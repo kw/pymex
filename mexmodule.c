@@ -49,9 +49,8 @@ static PyObject *_raiselasterror(PyObject *self) {
   mxArray *argin;
   mxArray *argout;
   argin = mxCreateString("reset");
-  mexSetTrapFlag(1);
-  int retval = mexCallMATLAB(1, &argout, 1, &argin, "lasterror");
-  if (!retval) {
+  mxArray *err = mexCallMATLABWithTrap(1, &argout, 1, &argin, "lasterror");
+  if (!err) {
     char *id = mxArrayToString(mxGetField(argout, 0, "identifier"));
     char *msg = mxArrayToString(mxGetField(argout, 0, "message"));
     PyObject *stack = Any_mxArray_to_PyObject(mxGetField(argout, 0, "stack"));
@@ -64,7 +63,8 @@ static PyObject *_raiselasterror(PyObject *self) {
 			  PyErr_SetObject doesn't steal the reference. */
   }
   else {
-    PyErr_SetString(MATLABError, "MATLAB Error occurred, but could not retrieve error struct.");
+    PyErr_SetString(MATLABError, "MATLAB Error occurred, "
+		    "but could not retrieve error struct.");
   }
   return NULL;
 }
@@ -73,16 +73,14 @@ static PyObject *m_eval(PyObject *self, PyObject *args) {
   char *evalstring = NULL;
   if (!PyArg_ParseTuple(args, "s", &evalstring))
     return NULL;
-  /* would prefer to use mexCallMATLABWithTrap, but not in 2008a */
-  mexSetTrapFlag(1);
   mxArray *evalarray[2];
   evalarray[0] = mxCreateString("base");
   evalarray[1] = mxCreateString(evalstring);
   mxArray *out = NULL;
-  int retval = mexCallMATLAB(1, &out, 2, evalarray, "evalin");
+  mxArray *err = mexCallMATLABWithTrap(1, &out, 2, evalarray, "evalin");
   mxDestroyArray(evalarray[0]);
   mxDestroyArray(evalarray[1]);
-  if (retval)
+  if (err)
     return _raiselasterror(NULL);
   else {
     return Any_mxArray_to_PyObject(out);
@@ -105,9 +103,9 @@ static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
   int tupleout = nargout >= 0;
   if (nargout < 0) nargout = 1;
   mxArray *outargs[nargout];
-  mexSetTrapFlag(1);
-  int retval = mexCallMATLAB(nargout, outargs, nargin, inargs, "feval");
-  if (retval)
+  mxArray *err = mexCallMATLABWithTrap(nargout, outargs, 
+				       nargin, inargs, "feval");
+  if (err)
     return _raiselasterror(NULL);
   else {
     if (tupleout) {
@@ -154,6 +152,12 @@ PyMODINIT_FUNC initmexmodule(void) {
   
   PyObject *sys = PyImport_AddModule("sys");
   PyObject *path = PyObject_GetAttrString(sys, "path");
-  PyObject *pymexpath = PyObject_CallMethod(m, "eval", "s", "fileparts(which('pymex'));");
+  PyObject *pymexpath = PyObject_CallMethod(m, "eval", "s", 
+					    "fileparts(which('pymex'));");
   if (PyList_Append(path, pymexpath) < 0) PyErr_Clear();
+  PyObject *argv = PyList_New(1);
+  PyObject *arg0 = PyBytes_FromString("matlab");
+  PyList_SetItem(argv, 0, arg0);
+  Py_DECREF(arg0);
+  if (PyModule_AddObject(sys, "argv", argv) < 0) PyErr_Clear();
 }

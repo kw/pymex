@@ -96,7 +96,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
      */
     mexLock();
   }
-  mexSetTrapFlag(1);
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
     if (nlhs == 1) {
       plhs[0] = mxCreateCellMatrix(1,NUMBER_OF_PYMEX_COMMANDS+1);
@@ -106,7 +105,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       mxSetCell(plhs[0], NUMBER_OF_PYMEX_COMMANDS, mxCreateString("help"));
     } 
     else {
-      mexEvalString("help('pymex.m')");
+      mexEvalStringWithTrap("help('pymex.m')");
     }
   }
   else if (mxIsNumeric(prhs[0])) {
