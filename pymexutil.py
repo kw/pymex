@@ -4,6 +4,8 @@ This module is primarily for internal use, though users
 who need to modify some behaviors (particularly with type conversion)
 might want to have a look-see. 
 '''
+# Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
+# For full license details, see the LICENSE file.
 
 import mx
 import struct
