@@ -203,6 +203,7 @@ mxclasses = {'double' : mx.DOUBLE,
              'char' : mx.CHAR,
              'logical' : mx.LOGICAL,
              'struct' : mx.STRUCT,
+             'cell' : mx.CELL,
              'function_handle': mx.FUNCTION,
              'unknown' : mx.UNKNOWN,
              }
@@ -332,4 +333,14 @@ class Test_Struct(Test_mxArray):
         '''
         eq_(len(self.obj._get_fields()), 0)
 
+
+class Test_Cell(Test_mxArray):
+    def setUp(self):
+        cobj = bare_cell((1,2))
+        self.obj = mx.Array(mxpointer=cobj)
+    def test_setcell(self):
+        self.obj._set_cell(index=0, value='foo')
+    def test_getcell(self):
+        self.test_setcell()
+        eq_(self.obj._get_cell(index=0), 'foo')
 

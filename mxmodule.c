@@ -7,13 +7,13 @@
 
 static PyObject *dowrap(PyObject *cobj) {
   PyObject *nargs = PyTuple_New(0);
-  PyObject *kwargs = PyDict_New();
-  PyDict_SetItemString(kwargs, "mxpointer", cobj);
+  PyObject *kw = PyDict_New();
+  PyDict_SetItemString(kw, "mxpointer", cobj);
   PyObject *arraycls = Find_mltype_for(mxArrayPtr(cobj));
   /* TODO: There is probably a better way to do this... */
-  PyObject *ret = PyObject_Call(arraycls, nargs, kwargs);
+  PyObject *ret = PyObject_Call(arraycls, nargs, kw);
   Py_DECREF(nargs);
-  Py_DECREF(kwargs);
+  Py_DECREF(kw);
   Py_DECREF(arraycls);
   return ret;
 }
@@ -38,11 +38,11 @@ static PyObject *dowrap(PyObject *cobj) {
 			  (long) i, (long) dims[i]);			\
   } if(1)
   
-static PyObject *CreateCellArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *CreateCellArray(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"dims", "wrap", NULL};
   PyObject *pydims = NULL;
   int wrap = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "|Oi", kwlist,
 				   &pydims, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
@@ -56,13 +56,13 @@ static PyObject *CreateCellArray(PyObject *self, PyObject *args, PyObject *kwarg
     return mxArrayPtr_New(cell);
 }
 
-static PyObject *CreateNumericArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *CreateNumericArray(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"dims", "mxclass", "complexity", "wrap", NULL};
   PyObject *pydims = NULL;
   mxClassID class = mxDOUBLE_CLASS;
   mxComplexity complexity = mxREAL;
   int wrap = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oiii", kwlist, 
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "|Oiii", kwlist, 
 				   &pydims, &class, &complexity, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
@@ -76,11 +76,11 @@ static PyObject *CreateNumericArray(PyObject *self, PyObject *args, PyObject *kw
     return mxArrayPtr_New(array);
 }
 
-static PyObject *CreateStructArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *CreateStructArray(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"dims", "wrap", NULL};
   PyObject *pydims = NULL;
   int wrap = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "|Oi", kwlist,
 				   &pydims, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_Pack(1, PyLong_FromLong(1));
@@ -94,11 +94,11 @@ static PyObject *CreateStructArray(PyObject *self, PyObject *args, PyObject *kwa
     return mxArrayPtr_New(array);
 }
 
-static PyObject *CreateCharArray(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *CreateCharArray(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"dims", "wrap", NULL};
   PyObject *pydims = NULL;
   int wrap = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oi", kwlist,
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "|Oi", kwlist,
 				   &pydims, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
@@ -112,11 +112,11 @@ static PyObject *CreateCharArray(PyObject *self, PyObject *args, PyObject *kwarg
     return mxArrayPtr_New(array);
 }
 
-static PyObject *CreateString(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *CreateString(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"string", "wrap", NULL};
   char *string = NULL;
   int wrap = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwlist,
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "s|i", kwlist,
 				   &string, &wrap))
     return NULL;
   mxArray *array = mxCreateString((const char*) string);
@@ -126,12 +126,12 @@ static PyObject *CreateString(PyObject *self, PyObject *args, PyObject *kwargs) 
     return mxArrayPtr_New(array);
 }
 
-static PyObject *CreateFunctionHandle(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *CreateFunctionHandle(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"name", "closure", "wrap", NULL};
   char *name = NULL;
   char *closure = NULL;
   int wrap = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssi", kwlist,
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "|ssi", kwlist,
 				   &name, &closure, &wrap))
     return NULL;
   PyObject *evalstring;
@@ -199,8 +199,8 @@ static PyMethodDef mx_methods[] = {
 
 /* libmx mxArray type */
 
-static int mxArray_init(mxArrayObject* self, PyObject *args, PyObject *kwargs) {
-  PyObject *mxptr = PyDict_GetItemString(kwargs, "mxpointer");
+static int mxArray_init(mxArrayObject* self, PyObject *args, PyObject *kw) {
+  PyObject *mxptr = PyDict_GetItemString(kw, "mxpointer");
   if (!mxptr) {
     PyErr_Format(PyExc_ValueError, "Failed to build mx.Array wrapper: need mxpointer keyword argument.");
     return -1;
@@ -248,14 +248,14 @@ static PyObject *mxArray_mxCalcSingleSubscript(PyObject *self, PyObject *args) {
   return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
 }
 
-static PyObject *mxArray_mxGetField(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *mxArray_mxGetField(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"fieldname","index", NULL};
   mxArray *ptr = mxArrayPtr(self);
   if (!mxIsStruct(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected struct, got %s", mxGetClassName(ptr));
   char *fieldname;
   long index = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "s|l", 
 				   kwlist, &fieldname, &index))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
@@ -284,12 +284,12 @@ static PyObject *mxArray_mxGetField(PyObject *self, PyObject *args, PyObject *kw
    UPDATE: Apparently this is fixed in 2009b, but with some change to the API of some sort.
    I do not have this version. I did notice that on my 2009a machine no SIGABRT was signaled. Odd.
 */
-static PyObject *mxArray_mxGetProperty(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *mxArray_mxGetProperty(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"propname","index", NULL};
   mxArray *ptr = mxArrayPtr(self);
   char *propname;
   long index = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l", 
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "s|l", 
 				   kwlist, &propname, &index))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
@@ -301,12 +301,13 @@ static PyObject *mxArray_mxGetProperty(PyObject *self, PyObject *args, PyObject 
   return Any_mxArray_to_PyObject(item);
 }
 
-static PyObject *mxArray_mxGetCell(PyObject *self, PyObject *args) {
+static PyObject *mxArray_mxGetCell(PyObject *self, PyObject *args, PyObject *kw) {
+  static char *kwlist[] = {"index", NULL};
   long index = 0;
   mxArray *ptr = mxArrayPtr(self);
   if (!mxIsCell(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
-  if (!PyArg_ParseTuple(args, "l", &index))
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "l", kwlist, &index))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
@@ -321,7 +322,7 @@ static PyObject *mxArray_mxGetCell(PyObject *self, PyObject *args) {
   return Any_mxArray_to_PyObject(item);
 }
 
-static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"fieldname", "value", "index", NULL};
   mxArray *ptr = mxArrayPtr(self);
   if (!mxIsStruct(ptr))
@@ -329,7 +330,7 @@ static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kw
   char *fieldname;
   PyObject *newvalue;
   long index = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "sO|l",
 				   kwlist, &fieldname, &newvalue, &index))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
@@ -347,13 +348,13 @@ static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kw
 }
 
 /* FIXME: See discussion at mxGetProperty */
-static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject *kwargs) {
+static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"propname", "value", "index", NULL};
   const mxArray *ptr = mxArrayPtr(self);
   char *propname;
   PyObject *newvalue;
   long index = 0;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|l",
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "sO|l",
 				   kwlist, &propname, &newvalue, &index))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
@@ -364,13 +365,14 @@ static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject 
   Py_RETURN_NONE;
 }
 
-static PyObject *mxArray_mxSetCell(PyObject *self, PyObject *args) {
+static PyObject *mxArray_mxSetCell(PyObject *self, PyObject *args, PyObject *kw) {
+  static char* kwlist[] = {"index", "value", NULL};
   const mxArray *ptr = mxArrayPtr(self);
   if (!mxIsCell(ptr))
     return PyErr_Format(PyExc_TypeError, "Expected cell, got %s", mxGetClassName(ptr));
   PyObject *newvalue;
   long index = 0;
-  if (!PyArg_ParseTuple(args, "lO", &index, &newvalue))
+  if (!PyArg_ParseTupleAndKeywords(args, kw, "lO", kwlist, &index, &newvalue))
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
@@ -628,13 +630,13 @@ static PyMethodDef mxArray_methods[] = {
    "Retrieve a field of a struct, optionally at a particular index."},
   {"_get_property", (PyCFunction)mxArray_mxGetProperty, METH_VARARGS | METH_KEYWORDS,
    "Retrieve a property of a object, optionally at a particular index."},
-  {"_get_cell", (PyCFunction)mxArray_mxGetCell, METH_VARARGS,
+  {"_get_cell", (PyCFunction)mxArray_mxGetCell, METH_VARARGS | METH_KEYWORDS,
    "Retrieve a cell array element"},
   {"_set_field", (PyCFunction)mxArray_mxSetField, METH_VARARGS | METH_KEYWORDS,
    "Set a field of a struct, optionally at a particular index."},
   {"_set_property", (PyCFunction)mxArray_mxSetProperty, METH_VARARGS | METH_KEYWORDS,
    "Set a property of an object, optionally at a particular index."},
-  {"_set_cell", (PyCFunction)mxArray_mxSetCell, METH_VARARGS,
+  {"_set_cell", (PyCFunction)mxArray_mxSetCell, METH_VARARGS | METH_KEYWORDS,
    "Set a cell array element"},
   {"_get_fields", (PyCFunction)mxArray_mxGetFields, METH_NOARGS,
    "Returns a tuple with the field names of the struct."},
