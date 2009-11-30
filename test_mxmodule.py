@@ -343,4 +343,6 @@ class Test_Cell(Test_mxArray):
     def test_getcell(self):
         self.test_setcell()
         eq_(self.obj._get_cell(index=0), 'foo')
-
+    def test_getempty(self):
+        eq_(self.obj._get_cell(index=0)._get_number_of_elements(), 0)
+    
