@@ -337,18 +337,107 @@ class Test_Cell(Test_mxArray):
         cobj = bare_cell((1,2))
         self.obj = mx.Array(mxpointer=cobj)
     def test_setcell(self):
+        '''
+        _set_cell works in standard case
+        '''
         self.obj._set_cell(index=0, value='foo')
     def test_getcell(self):
+        '''
+        _get_cell works in standard case
+        '''
         self.test_setcell()
         eq_(self.obj._get_cell(index=0), 'foo')
     def test_getempty(self):
+        '''
+        _get_cell returns [] for uninitialized items
+        '''
         eq_(self.obj._get_cell(index=0)._get_number_of_elements(), 0)
-    
+    @raises(IndexError)
+    def test_getbadindex(self):
+        '''
+        _get_cell checks index upper bounds
+        '''
+        self.obj._get_cell(index=2)
+    @raises(IndexError)
+    def test_getnegindex(self):
+        '''
+        _get_cell checks index lower bounds
+        '''
+        self.obj._get_cell(index=-1)
+    @raises(IndexError)
+    def test_setbadinex(self):
+        '''
+        _set_cell checks index upper bounds
+        '''
+        self.obj._set_cell(index=2,value='foo')
+    @raises(IndexError)
+    def test_setnegindex(self):
+        '''
+        _set_cell checks index lower bounds
+        '''
+        self.obj._set_cell(index=-1,value='foo')        
 
-class Test_Object(Test_mxArray):
+class Test_EmptyCell(Test_mxArray):
+    '''
+    Test bounds checking for 0-element cell array
+    '''
+    def setUp(self):
+        cobj = bare_cell(())
+        self.obj = mx.Array(mxpointer=cobj)
+    @raises(IndexError)
+    def test_getbadindex(self):
+        '''
+        _get_cell checks index upper bounds
+        '''
+        self.obj._get_cell(index=0)
+    @raises(IndexError)
+    def test_getnegindex(self):
+        '''
+        _get_cell checks index lower bounds
+        '''
+        self.obj._get_cell(index=-1)
+    @raises(IndexError)
+    def test_setbadinex(self):
+        '''
+        _set_cell checks index upper bounds
+        '''
+        self.obj._set_cell(index=0,value='foo')
+    @raises(IndexError)
+    def test_setnegindex(self):
+        '''
+        _set_cell checks index lower bounds
+        '''
+        self.obj._set_cell(index=-1,value='foo')
+
+class Test_CVPartition(Test_mxArray):
+    '''
+    Test get/set property code
+    We should probably find a simple value class to
+    test with instead of this, since we can't actually
+    set a cvpartition's properties.
+    '''
     def setUp(self):
         from matlab import cvpartition
         cobj = cvpartition(100, 'k', 10, wrap=False)
         self.obj = mx.Array(mxpointer=cobj)
+    def test_getprop(self):
+        '''
+        _get_property works in normal case
+        '''
+        N = self.obj._get_property('N')
+        eq_(N, 100)
+    @raises(KeyError)
+    def test_badprop(self):
+        '''
+        _get_property raises KeyError for missing property
+        '''
+        N = self.obj._get_property('foo')
+    @raises(mx.MATLABError)
+    def test_setprop(self):
+        '''
+        _set_property doesn't work here.
+        No way to test this in a general fashion just now.
+        '''
+        raise SkipTest, "No way to determine property set failure"
+        self.obj._set_property('N', 42)
 
-        

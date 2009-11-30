@@ -350,7 +350,7 @@ static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kw
 /* FIXME: See discussion at mxGetProperty */
 static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"propname", "value", "index", NULL};
-  const mxArray *ptr = mxArrayPtr(self);
+  mxArray *ptr = mxArrayPtr(self);
   char *propname;
   PyObject *newvalue;
   long index = 0;
@@ -359,9 +359,10 @@ static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject 
     return NULL;
   const mwSize numel = mxGetNumberOfElements(ptr);
   if (index >= numel || index < 0)
-    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", index, (long) numel);
+    return PyErr_Format(PyExc_IndexError, "Index %ld out of bounds (0 <= i < %ld)", 
+			index, (long) numel);
   mxArray *mxvalue = Any_PyObject_to_mxArray(newvalue);
-  mxSetProperty((mxArray *) ptr, (mwIndex) index, propname, mxvalue);
+  mxSetProperty(ptr, (mwIndex) index, propname, mxvalue);
   Py_RETURN_NONE;
 }
 
