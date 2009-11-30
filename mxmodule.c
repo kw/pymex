@@ -167,6 +167,9 @@ static PyObject *wrap_pycobject(PyObject *self, PyObject *args) {
   PyObject *cobj = NULL;
   if (!PyArg_ParseTuple(args, "O", &cobj))
     return NULL;
+  if (!mxArrayPtr_Check(cobj))
+    return PyErr_Format(PyExc_ValueError, "Input must be a PyCObject "
+			"produced by an mx.create_* function.");
   return dowrap(cobj);
 }
 
@@ -231,7 +234,8 @@ static PyObject *mxArray_mxCalcSingleSubscript(PyObject *self, PyObject *args) {
   mwSize len = (mwIndex) PySequence_Length(args);
   mwSize dims = mxGetNumberOfDimensions(mxobj);
   if (len > dims) {
-    return PyErr_Format(PyExc_IndexError, "Can't calculate %ld-dimensional subscripts for %ld-dimensional array",
+    return PyErr_Format(PyExc_IndexError, 
+			"Can't calculate %ld-dimensional subscripts for %ld-dimensional array",
 			(long) len, (long) dims);
   }
   mwIndex subs[len];
