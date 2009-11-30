@@ -326,6 +326,10 @@ class Test_Struct(Test_mxArray):
                                    index=0)
         outfields = set(self.obj._get_fields())
         eq_(infields, outfields)
-
+    def test_emptyfields(self):
+        '''
+        _get_fields acts appropriately for struct with no fields
+        '''
+        eq_(len(self.obj._get_fields()), 0)
 
 

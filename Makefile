@@ -30,6 +30,10 @@ ${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h .debug_${DEBUG}
 	@rm -f .debug_0
 	@touch .debug_1
 
+test: ${TARGET} *.py
+	${MATLAB_SCRIPT} -nojvm -nodisplay \
+	-r "pyimport nose; exit(unpy(~nose.run()));"
+
 .PHONY: clean
 
 clean:
