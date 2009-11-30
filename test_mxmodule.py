@@ -223,9 +223,7 @@ class Test_mxArray(object):
             raise TypeError, ("Class %s apparently has class ID %d, which "
                               "belongs to a builtin class") % (classname,
                                                                classid)
-        else:
-            raise RuntimeError, ("Something weird happened (%s, %d)" %
-                                 (classname, classid))
+        else: pass # user object, dynamically assigned ID
     def test_str(self):
         str(self.obj)
     def test_repr(self):
@@ -346,3 +344,11 @@ class Test_Cell(Test_mxArray):
     def test_getempty(self):
         eq_(self.obj._get_cell(index=0)._get_number_of_elements(), 0)
     
+
+class Test_Object(Test_mxArray):
+    def setUp(self):
+        from matlab import cvpartition
+        cobj = cvpartition(100, 'k', 10, wrap=False)
+        self.obj = mx.Array(mxpointer=cobj)
+
+        

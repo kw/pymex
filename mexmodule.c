@@ -88,10 +88,11 @@ static PyObject *m_eval(PyObject *self, PyObject *args) {
 }
 
 static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *kwlist[] = {"nargout",NULL};
+  static char *kwlist[] = {"nargout","wrap",NULL};
   int nargout = -1;
+  int wrap = 1;
   PyObject *fakeargs = PyTuple_New(0);
-  if (!PyArg_ParseTupleAndKeywords(fakeargs, kwargs, "|i", kwlist, &nargout))
+  if (!PyArg_ParseTupleAndKeywords(fakeargs, kwargs, "|ii", kwlist, &nargout,&wrap))
     return NULL;
   Py_DECREF(fakeargs);
   int nargin = PySequence_Size(args);  
@@ -111,12 +112,18 @@ static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
     if (tupleout) {
       PyObject *outseq = PyTuple_New(nargout);
       for (i=0; i<nargout; i++) {
-	PyTuple_SetItem(outseq, i, Any_mxArray_to_PyObject(outargs[i]));
+	PyTuple_SetItem(outseq, i, 
+			wrap 
+			? Any_mxArray_to_PyObject(outargs[i]) 
+			: mxArrayPtr_New(outargs[i])
+			);
       }
       return outseq;
     }
     else
-      return Any_mxArray_to_PyObject(outargs[0]);
+      return wrap 
+	? Any_mxArray_to_PyObject(outargs[0])
+	: mxArrayPtr_New(outargs[0]);
   }
 }
 
