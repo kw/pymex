@@ -10,21 +10,7 @@
   matlab.mex to generate string representations of objects, and directly calls
   mexMakeArrayPersistent when it creates things in mex mode. 
  */
-/*
-  FIXME: libmex is not threadsafe. Neither 
-  is CPython, but at least we have the GIL.
-  MATLAB does not even have a concept of 
-  user-accessible independent threads, so it
-  should be no surprise that they have no 
-  user-accessible locking mechanism. It might
-  be appropriate to add a "MIL" to serialize 
-  libmex functions. Note that certain libmx
-  functions call into libmex when compiled in 
-  mex mode, but which ones exactly? That
-  appears to be undocumented, but we can make 
-  some educated guesses, and should modify
-  matlab.mx accordingly if a MIL is implemented.
-*/
+
 #define MEXMODULE
 #include "pymex.h"
 #if MATLAB_MEX_FILE
