@@ -1,6 +1,13 @@
 /* Copyright (c) 2009 Ken Watford (kwatford@cise.ufl.edu)
    For full license details, see the LICENSE file. */
 
+#define CONST_TO_STR(s) _CONST_TO_STR(s)
+#define _CONST_TO_STR(s) #s
+
+#ifndef PYMEX_BUILD
+#define PYMEX_BUILD unknown
+#endif
+
 #ifndef PYMEX_HELPERS_INCLUDED
 #define PYMEX_HELPERS_INCLUDED
 #include <Python.h>

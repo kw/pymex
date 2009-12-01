@@ -314,4 +314,8 @@ PYMEX(TO_MXARRAY, 1,1,
 	  plhs[0] = Any_PyObject_to_mxArray(unbox(prhs[0]));
       })
 
-
+PYMEX(VERSION, 0, 0,
+      "Returns the git branch/tag where pymex was last built.",
+      {
+	plhs[0] = mxCreateString(CONST_TO_STR(PYMEX_BUILD));
+      })

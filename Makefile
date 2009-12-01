@@ -6,6 +6,16 @@ CFLAGS=$(shell ${PYTHON}-config --cflags)
 CLIBS=$(shell ${PYTHON}-config --libs)
 LDFLAGS=$(shell ${PYTHON}-config --ldflags) -L$(shell ${PYTHON}-config --prefix)/lib
 
+BUILDBRANCH = $(shell git branch --no-color | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+ifeq ($(BUILDBRANCH),)
+ BUILDBRANCH = unknown
+endif
+BUILDTAG = $(shell git describe --always)
+ifeq ($(BUILDTAG),)
+ BUILDTAG = unknown
+endif
+BUILDNAME = $(BUILDBRANCH)/$(BUILDTAG)
+
 MEXEXT ?= $(shell ${TMW_ROOT}/bin/mexext)
 
 DEBUG ?= $(if $(wildcard .debug_1),1,0)
@@ -18,7 +28,11 @@ MEX = ${TMW_ROOT}/bin/mex
 all: ${TARGET}
 
 ${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h .debug_${DEBUG}
-	$(MEX) $(MEXFLAGS) $(MEXENV) -DPYMEX_DEBUG_FLAG=${DEBUG} pymex.c sharedfuncs.c *module.c
+	@echo building $(BUILDNAME)
+	$(MEX) $(MEXFLAGS) $(MEXENV) \
+	-DPYMEX_DEBUG_FLAG=$(DEBUG) \
+	-DPYMEX_BUILD="$(BUILDNAME)" \
+	pymex.c sharedfuncs.c *module.c
 
 .debug_0:
 	@echo "Debug disabled."
