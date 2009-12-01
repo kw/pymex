@@ -273,17 +273,7 @@ static PyObject *mxArray_mxGetField(PyObject *self, PyObject *args, PyObject *kw
   return Any_mxArray_to_PyObject(item);
 }
 
-/* FIXME: mxGetProperty and mxSetProperty cause SIGABRT if there's some sort of error,
-   but there doesn't seem to be any way to catch the signal because the MATLAB interpreter
-   either changes my signal handler or there's a different handler for that thread or something. 
-   This happens if you try to access a nonexistent property (there is no C-API function to determine
-   valid properties), if you try to access a property but have insufficient rights (also no way of
-   checking that from C), or if an error occurs in the property's accessor function.
-   Should probably use subsref/subsasgn instead. 
-
-   UPDATE: Apparently this is fixed in 2009b, but with some change to the API of some sort.
-   I do not have this version. I did notice that on my 2009a machine no SIGABRT was signaled. Odd.
-*/
+/* See Issue #4 */
 static PyObject *mxArray_mxGetProperty(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"propname","index", NULL};
   mxArray *ptr = mxArrayPtr(self);
@@ -347,7 +337,7 @@ static PyObject *mxArray_mxSetField(PyObject *self, PyObject *args, PyObject *kw
   Py_RETURN_NONE;
 }
 
-/* FIXME: See discussion at mxGetProperty */
+/* See Issue #4 */
 static PyObject *mxArray_mxSetProperty(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"propname", "value", "index", NULL};
   mxArray *ptr = mxArrayPtr(self);

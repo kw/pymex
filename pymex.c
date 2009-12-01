@@ -3,8 +3,6 @@
 
 /* The pymex kernel. See commands.c for kernel commands, 
    or do `c = pymex` for a list. */
-/* FIXME: Make pymex and its related python modules GIL aware. 
-   See also mexmodule.c for discussion about a 'MIL'. */
 #include "pymex.h"
 #include <mex.h>
 #define XMACRO_DEFS "commands.c"
@@ -170,7 +168,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     PyErr_Fetch(&err_type, &err_value, &err_traceback);
     if (!err_value)
       err_value = PyUnicode_FromString("<no value>");
-    /* FIXME: This seems a tad overcomplicated for some 
+    /* TODO: This seems a tad overcomplicated for some 
        simple string concatentaion. */
     PyObject *pyid = PyUnicode_FromString("Python:"); 
     PyObject *errname = PyObject_GetAttrString(err_type, "__name__");
