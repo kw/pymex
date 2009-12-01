@@ -43,12 +43,12 @@ a message on GitHub, or maybe even send me an e-mail (kwatford@cise.ufl.edu)
 
 # Usage #
 
-For some examples, see python_example.py and matlab_example.py
+For some examples, see `python_example.py` and `matlab_example.py`
 `help pymex` might be helpful.
 
 On the MATLAB side, `pyimport` and `pybuiltins` give us access to
-Python modules and builtins. Running pybuiltins with no arguments
-tries to import all of Python's builtins, which is probably undesireable
+Python modules and builtins. Running `pybuiltins` with no arguments
+tries to import all of Python's builtins, which is probably undesirable.
 Provide string arguments to request specific builtins:
     pybuiltins list tuple dict
 or
@@ -60,19 +60,19 @@ Some shortcuts are provided in the 'py' package:
 (note that these shortcuts have different calling conventions
 than the builtins. YMMV)
 
-Python functions and expresions do not automatically convert
+Python functions and expressions do not automatically convert
 outputs to MATLAB objects, even if they're just wrapped MATLAB
 objects. Use the `unpy` method to coerce.
 
 On the Python side:
-   from matlab import cell, fprintf, plot, max
+    from matlab import cell, fprintf, plot, max
 
 MATLAB functions (currently) coerce all arguments to MATLAB
 types when possible, since presumably MATLAB functions don't
 want Python inputs. To request multiple outputs, use the
 'nargout' keyword:
-   x = numpy.array([1, 2, 4, 0])
-   val, ind = matlab.max(x, nargout=2) # ind is 1-based
+    x = numpy.array([1, 2, 4, 0])
+    val, ind = matlab.max(x, nargout=2) # ind is 1-based
 
 # Wrappers #
 
