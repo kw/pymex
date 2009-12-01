@@ -331,8 +331,8 @@ PyObject *Calculate_matlab_mro(mxArray *mxobj) {
  */
 PyObject *Find_mltype_for(mxArray *mxobj) {
   #define GET_MX_ARRAY_CLASS PyObject_GetAttrString(mxmodule, "Array")
-  PyObject *newclass, *mrolist, *mltypes, *findtype;
-  newclass = mrolist = mltypes = findtype = NULL;
+  PyObject *newclass, *mrolist, *util, *findtype;
+  newclass = mrolist = util = findtype = NULL;
   mrolist = Calculate_matlab_mro(mxobj);
   if (!mrolist) {
     mexPrintf("failed to get mro list\n");
@@ -340,16 +340,16 @@ PyObject *Find_mltype_for(mxArray *mxobj) {
     newclass = GET_MX_ARRAY_CLASS;
     goto findtypes_error;
   }
-  mltypes = PyImport_ImportModule("mltypes");
-  if (!mltypes) {
-    mexPrintf("failed to import mltypes\n");
+  util = PyImport_ImportModule("pymexutil");
+  if (!util) {
+    mexPrintf("failed to import pymexutil\n");
     PyErr_Clear();
     newclass = GET_MX_ARRAY_CLASS;
     goto findtypes_error;
   }
-  findtype = PyObject_GetAttrString(mltypes, "_findtype");
+  findtype = PyObject_GetAttrString(util, "findtype");
   if (!findtype) {
-    mexPrintf("failed to find _findtype\n");
+    mexPrintf("failed to find pymexutil.findtype\n");
     PyErr_Clear();
     newclass = GET_MX_ARRAY_CLASS;
     goto findtypes_error;
@@ -367,7 +367,7 @@ PyObject *Find_mltype_for(mxArray *mxobj) {
   findtypes_error:
   Py_XDECREF(findtype);
   Py_XDECREF(mrolist);
-  Py_XDECREF(mltypes);
+  Py_XDECREF(util);
   return newclass;
 }
 

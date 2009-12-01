@@ -75,7 +75,8 @@ def _make_scalar_unpy(scalartype, fmt, mxclass):
     def _scalar_unpy(self):
         byteval = struct.pack(fmt, self)
         scalar = mx.create_numeric_array(dims=(1,1), mxclass=mxclass, wrap=True)
-        assert len(byteval) == scalar._get_element_size(), "Datatype size mismatch"
+        assert len(byteval) == scalar._get_element_size(), (
+            "Datatype size mismatch")
         scalar._set_element(byteval)
         return scalar
     register_unpy(scalartype, _scalar_unpy)
@@ -123,7 +124,8 @@ try:
         if issubclass(dtype, np.floating): return mx.DOUBLE
         elif issubclass(dtype, np.unsignedinteger): return mx.UINT64
         elif issubclass(dtype, np.integer): return mx.INT64
-        else: raise TypeError, "Couldn't figure out an appropriate mxclass for dtype %r" % dtype
+        else: raise TypeError, ("Couldn't figure out an appropriate "
+                                "mxclass for dtype %r" % dtype)
 
     def numpy_ndarray_unpy(self):
         '''
@@ -146,4 +148,67 @@ try:
     register_unpy(np.generic, numpy_ndarray_unpy)
 except: pass # No numpy for you, I guess
 
+def findtype(typelist):
+    '''
+    This function is used internally to
+    located candidate wrapper classes.
+    typelist is a sequence of pairs, of the
+    form (packagename, classname). The package
+    name can be empty. The package name and class
+    name refer to MATLAB packages/classes, though
+    some of these will be "virtual" classes prefixed
+    with underscores. These are added by mro.m to
+    make up for deficiencies in MATLAB's type hierarchy.
+    '''
+    for (modstr, clsstr) in typelist:
+        if len(modstr): 
+            adjusted_modstr = "mltypes.%s" % modstr
+        else:
+            adjusted_modstr = "mltypes"
+        try:
+            tempmod = __import__(adjusted_modstr, globals(), 
+                                 locals(), [clsstr], 0)
+            cls = getattr(tempmod, clsstr);
+            if issubclass(cls, mx.Array):
+                return cls;
+        except:
+            pass            
+    # if we got this far and found nothing, just use mx.Array
+    return mx.Array;
+
+class _strfun(str):
+    '''
+    Use a string as a MATLAB function.
+    The result is simply used as a function name to give
+    to feval. To procure an actual function handle, use the
+    function_handle class. 
+    '''
+    def __call__(self, *args, **kwargs):
+        return mex.call(self, *args, **kwargs)
+
+
+def _check_dims(self, ind):
+    if isinstance(ind, tuple) and len(ind) > 1:
+        if any(map(lambda a: isinstance(a, slice), ind)):
+            raise KeyError, "slicing not yet supported"
+        numinds = len(ind)
+        dims = self._get_dimensions()
+        if numinds > len(dims): 
+            raise KeyError, "too many dimensions"
+        elif numinds < len(dims):
+            shortdims = list(dims[:numinds])
+            shortdims.append(reduce(lambda a,b: a*b, dims[numinds:]))
+            dims = shortdims;
+        if any(map(lambda a,b: b <= a, ind, dims)):
+            raise KeyError, "at least one index out of bounds"
+        # all seems well, so calc the real index
+        ind = self._calc_single_subscript(*ind)
+    elif isinstance(ind, tuple) and len(ind) == 1:
+        ind = ind[0]
+    elif isinstance(ind, slice):
+        raise KeyError, "slicing not yet supported"
+    ind = int(ind) # mxArray doesn't do comparisons yet...
+    if ind > len(self):
+        raise KeyError, "linear index out of bounds: %d > %d" % (ind, len(self))
+    return ind
 
