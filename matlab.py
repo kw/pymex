@@ -31,15 +31,13 @@ class __MATLABModule(_sys.__class__):
     def __getattr__(self, name):
         if name in dir(self):
             return getattr(self, name)
-        elif name.startswith('_'):
-            raise AttributeError, "MATLAB names can't start with underscores."
         else:
             # While function_handle is a more heavy-weight
             # operation than mltypes._strfun, it is theoretically
             # faster to call function handles, so it is probably
             # acceptable to have higher up-front cost. Especially
             # since we're caching the result in this module.
-            strfun = self._function_handle(name=name)
+            strfun = self._function_handle(name=name.lstrip('_'))
             setattr(self, name, strfun)
             return strfun
 
