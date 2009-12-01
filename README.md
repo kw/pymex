@@ -1,7 +1,7 @@
-h1. README for pymex
+# README for pymex #
 
 Testing readme rendering
 
-# One
-# Two
-# Three
+* One
+* Two
+* Three
