@@ -161,3 +161,11 @@ A few of note, so that you don't have to go looking for them:
 * MATLAB is not thread safe. See Issue #2.
 * There is presently no support for complex or sparse matrices.
   See issues #5 and #6
+* I presently have no way to generate an actual Python REPL in pymex.
+  MATLAB does weird things with its stdin/stdout in its Desktop gui.
+  If you start it up with `-nodesktop` then stdout works, but stdin
+  doesn't seem to work properly (I've started Python's standard REPL
+  but it doesn't seem to accept input). I've also tried simply starting
+  IDLE, but it crashes somewhere within Tk/CoreFoundation (this is on my Mac)
+  Maybe someone will have better luck, or just write a module based on MATLAB's
+  `fprintf` and `input` functions.
