@@ -206,6 +206,20 @@ PYMEX(CALL, 2,3,
 	  if (kwargs && !PyDict_Check(kwargs))
 	    mexErrMsgIdAndTxt("python:NoKWargs", "kwargs must be a dict or null");
 	}
+	#if PYMEX_DEBUG_FLAG
+	PyObject *crepr = PyObject_Repr(callobj);
+	PyObject *arepr = PyObject_Repr(args);
+	PyObject *krepr = kwargs ? PyObject_Repr(kwargs) : NULL;
+	mexPrintf("CALLOBJ: %s\n", PyBytes_AsString(crepr));
+	mexPrintf("ARGS: %s\n", PyBytes_AsString(arepr));
+	if (krepr)
+	  mexPrintf("KEYS: %s\n", PyBytes_AsString(krepr));
+	else
+	  mexPrintf("KEYS: <null>\n");
+	Py_XDECREF(crepr);
+	Py_XDECREF(arepr);
+	Py_XDECREF(krepr);
+	#endif
 	PyObject *result = PyObject_Call(callobj, args, kwargs);
 	plhs[0] = box(result);
       })
