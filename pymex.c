@@ -77,24 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     initmatmodule();  
     initengmodule();
     mexAtExit(ExitFcn);
-    /* FIXME: This is probably not something I can actually fix, but
-       it should probably be mentioned as a known issue. MATLAB will
-       normally unload mex files after they return. This is obviously
-       a bad thing if they need to store information between calls,
-       so mexLock and mexUnlock prevent this unloading. There are 
-       pymex commands available that call these, and they are used
-       to increment and decrement the lock. The idea is that the lock
-       (and the mex file) could be released once your MATLAB session
-       holds no references to any Python objects. This seems to 
-       generally work, but Python apparently doesn't unload native
-       libraries correctly. Importing numpy, releasing the mex file,
-       and then restarting the mex will cause a MATLAB crash dump.
-       
-       So anyway, this mexLock is not paired with a mexUnlock anywhere,
-       so unless you explicitly use the MEXUNLOCK kernel command it
-       will keep pymex loaded indefinitely.
-     */
-    mexLock();
+    mexLock(); /* See Issue #3 */
   }
   if (nrhs < 1 || mxIsEmpty(prhs[0])) {
     if (nlhs == 1) {
