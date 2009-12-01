@@ -35,3 +35,14 @@ def run():
     # probably be configurable using keyword args...
     plot(x, s, x, c)
 
+
+def testmax():
+    '''
+    Testing that an example I put in the README
+    actually compiles and runs correctly.
+    '''
+    import numpy
+    import matlab
+    x = numpy.array([1,2,4,0])
+    val, ind = matlab.max(x, nargout=2)
+    matlab.fprintf("Max of %r is %r at 1-based index %r\n" % (x, val, ind))
