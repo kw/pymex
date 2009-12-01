@@ -10,7 +10,7 @@ BUILDBRANCH = $(shell git branch --no-color | sed -e '/^[^*]/d' -e 's/* \(.*\)/\
 ifeq ($(BUILDBRANCH),)
  BUILDBRANCH = unknown
 endif
-BUILDTAG = $(shell git describe --always)
+BUILDTAG = $(shell git describe)
 ifeq ($(BUILDTAG),)
  BUILDTAG = unknown
 endif
