@@ -130,8 +130,7 @@ try:
         Converts a numpy array to an mxArray. An appropriate
         data type is selected using select_mxclass_by_dtype.
         Fattens the array or scalar out to 2d if necessary. 
-        FIXME: Doesn't do anything appropriate for complex
-        dtypes.
+        See Issue #5
         '''
         self = np.atleast_2d(self)
         mxclass = select_mxclass_by_dtype(self.dtype.type)    
