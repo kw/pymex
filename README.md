@@ -43,7 +43,8 @@ a message on GitHub, or maybe even send me an e-mail (kwatford@cise.ufl.edu)
 
 # Usage #
 
-For some examples, see `python_example.py` and `matlab_example.py`
+For some examples, see `python_example.py` and `matlab_example.py`.
+
 `help pymex` might be helpful.
 
 On the MATLAB side, `pyimport` and `pybuiltins` give us access to
@@ -59,6 +60,19 @@ Some shortcuts are provided in the 'py' package:
     py.dict('spam', 'eggs', 'foo', 'bar')
 (note that these shortcuts have different calling conventions
 than the builtins. YMMV)
+
+MATLAB has no keyword arguments, so to pass those to a python function, use the `kw` class:
+    v = myfunc(a, b, kw('keyword1', 42, 'keyword2', py.None, ...))
+You can provide multiple instances of `kw` if necessary.
+
+To evaluate a python expression using the variables in the current MATLAB workspace, use `py.eval`:
+    >> x = {'spam', 42, struct('foo','bar'), containers.Map}
+    x = 
+        'spam'    [42]    [1x1 struct]    [0x1 containers.Map]
+    >> py.eval('[(type(a), a) for a in x]')
+    ans = 
+    [(<type 'str'>, 'spam'), (<class 'mltypes._builtins._numeric'>, 42), (<class 'mltypes._builtins.struct'>, 
+     <struct at 0x7f12c84b7fd0>), (<class 'mltypes.containers.Map'>, <containers.Map at 0x7f12c84ba738>)]
 
 Python functions and expressions do not automatically convert
 outputs to MATLAB objects, even if they're just wrapped MATLAB
