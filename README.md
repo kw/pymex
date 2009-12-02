@@ -48,7 +48,15 @@ For some examples, see `python_example.py` and `matlab_example.py`.
 `help pymex` might be helpful.
 
 On the MATLAB side, `pyimport` and `pybuiltins` give us access to
-Python modules and builtins. Running `pybuiltins` with no arguments
+Python modules and builtins. To import a module,
+    pyimport numpy
+or
+    np = pyimport('numpy')
+If you use the "command form" to import a submodule, it will change the
+dots into underscores. I'd recommend using the expression form instead.
+    pyimport mltypes.containers  % produces the variable "mltypes_containers"
+
+Running `pybuiltins` with no arguments
 tries to import all of Python's builtins, which is probably undesirable.
 Provide string arguments to request specific builtins:
     pybuiltins list tuple dict
@@ -73,6 +81,21 @@ To evaluate a python expression using the variables in the current MATLAB worksp
     ans = 
     [(<type 'str'>, 'spam'), (<class 'mltypes._builtins._numeric'>, 42), (<class 'mltypes._builtins.struct'>, 
      <struct at 0x7f12c84b7fd0>), (<class 'mltypes.containers.Map'>, <containers.Map at 0x7f12c84ba738>)]
+
+Python objects tend to have a lot of attributes whose names begin with underscores.
+That's not valid in MATLAB, but we can do it anyway using MATLAB's dynamic field access syntax:
+
+    >> l = py.list(1,2,3)
+    l = 
+    [1, 2, 3]
+    >> l.pop()           % normal attribute access
+    ans = 
+    3
+    >> l.('__len__')()   % underscore attribute access
+    ans = 
+    2
+
+This is ugly, but reinforces the idea that you probably shouldn't be accessing them.
 
 Python functions and expressions do not automatically convert
 outputs to MATLAB objects, even if they're just wrapped MATLAB
