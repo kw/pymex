@@ -17,14 +17,21 @@ classdef kw
     methods
         function kwargs = kw(varargin)
             arg = 0;
-            for i = 1:2:nargin
-                arg = arg + 1;
-                kwargs(arg).keyword = varargin{i}; %#ok<AGROW>
-                kwargs(arg).value = varargin{i+1}; %#ok<AGROW>
-            end
-            if arg==0
-                kwargs(1) = [];
-            end
+	    if mod(nargin,2)
+	      error('kw:needspairs', 'Input must be in pairs.');
+	    elseif nargin == 0
+	      kwargs(1) = [];
+            end	      
+	    if nargin == 2	      
+	      kwargs.keyword = varargin{1};
+	      kwargs.value = varargin{2};
+	      assert(ischar(kwargs.keyword));
+	    else
+	      for i = 1:2:nargin
+		arg = arg + 1;		
+		kwargs(arg) = kw(varargin{i:i+1});
+	      end
+	    end
         end
         
         function d = dict(kwargs)
