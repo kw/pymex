@@ -29,3 +29,15 @@ Cygwin has useful tools like `make` and `git`, but for some reason gnumex does n
 produce an appropriate set of mex options for cygwin's gcc (at least for me). 
 Compiling with MinGW and the standard Python for Windows also avoids depdendence on
 Cygwin. The compiled mexw32 or mexw64 file should only require Python to work.
+Of course, if you have installed the right msys ports you can probably do without cygwin.
+
+# Binaries #
+
+If MATLAB's `mexext` command tells you `mexw32`, then you may be able to skip the compilation
+and just drop [pymex.mexw32](http://cloud.github.com/downloads/kw/pymex/pymex.mexw32) into your
+pymex directory. You do still need the pymex distribution and to have Python 2.6 installed. There
+is currently no difference between this and the master branch other than compilation, so it shouldn't
+matter which branch you have out. Note that this binary was compiled under MATLAB 2008b in Windows 7
+with MinGW's gcc. I have no idea whether it will work on other configurations. 
+
+There is presently no `mexw64` binary available. Sorry.
