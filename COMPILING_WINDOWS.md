@@ -6,6 +6,7 @@ I'll try one of Microsoft's compilers later, but MATLAB's lcc doesn't
 seem to like Python's headers.
 
 You will need:
+
 1. [cygwin](http://www.cygwin.com/)
 2. [MinGW](http://www.mingw.org/)
 3. Python 2.6 for Windows (not just the cygwin version)
