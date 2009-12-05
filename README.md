@@ -20,10 +20,8 @@ a message on GitHub, or maybe even send me an e-mail (kwatford@cise.ufl.edu)
   issues. No NumPy for Py3k yet anyway.
 * NumPy. Not a build requirement, but you'll definitely want it.
 * (optional) nose, for running unit tests.
-* Not Windows. This isn't a zealotry thing, I just don't normally 
-  have a Windows machine with all of the above available, so I doubt
-  the Makefile will work right. There's a chance it might work with 
-  cygwin, but it will probably need modification to work properly.
+* If you're using windows, use the win32 branch, and see the
+  COMPILING_WINDOWS.md file.
 
 # Installation #
 
