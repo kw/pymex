@@ -1,10 +1,6 @@
-PYTHON ?= python2.6
-MATLAB_SCRIPT ?= matlab
-TMW_ROOT ?= $(shell ${MATLAB_SCRIPT} -e | grep MATLAB= | sed s/^MATLAB=//)
-
-CFLAGS=$(shell ${PYTHON}-config --cflags)
-CLIBS=$(shell ${PYTHON}-config --libs)
-LDFLAGS=$(shell ${PYTHON}-config --ldflags) -L$(shell ${PYTHON}-config --prefix)/lib
+PYDIR ?= C:/Python26
+CFLAGS= -I$(shell cygpath -m ${PYDIR}/include)
+CLIBS= $(shell cygpath -m ${PYDIR}/libs/libpython26.a)
 
 BUILDBRANCH = $(shell git branch --no-color | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
 ifeq ($(BUILDBRANCH),)
@@ -16,23 +12,22 @@ ifeq ($(BUILDTAG),)
 endif
 BUILDNAME = $(BUILDBRANCH)/$(BUILDTAG)
 
-MEXEXT ?= $(shell ${TMW_ROOT}/bin/mexext)
+MEXEXT ?= $(shell mexext.bat)
 
 DEBUG ?= $(if $(wildcard .debug_1),1,0)
 TARGET = pymex.${MEXEXT}
 
 MEXFLAGS ?= 
-MEXENV = CFLAGS="\$$CFLAGS ${CFLAGS}" CLIBS="\$$CLIBS ${CLIBS}" LDFLAGS="\$$LDFLAGS ${LDFLAGS}"
-MEX = ${TMW_ROOT}/bin/mex 
+MEX = mex.bat
 
 all: ${TARGET}
 
 ${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h .debug_${DEBUG}
 	@echo building $(BUILDNAME)
-	$(MEX) $(MEXFLAGS) $(MEXENV) \
+	$(MEX) $(MEXFLAGS) $(CFLAGS) \
 	-DPYMEX_DEBUG_FLAG=$(DEBUG) \
 	-DPYMEX_BUILD="$(BUILDNAME)" \
-	pymex.c sharedfuncs.c *module.c
+	pymex.c sharedfuncs.c *module.c $(CLIBS)
 
 .debug_0:
 	@echo "Debug disabled."
