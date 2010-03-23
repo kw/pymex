@@ -3,8 +3,14 @@ MATLAB_SCRIPT ?= matlab
 TMW_ROOT ?= $(shell ${MATLAB_SCRIPT} -e | grep MATLAB= | sed s/^MATLAB=//)
 
 CFLAGS=$(shell ${PYTHON}-config --cflags)
-CLIBS=$(shell ${PYTHON}-config --libs)
-LDFLAGS=$(shell ${PYTHON}-config --ldflags) -L$(shell ${PYTHON}-config --prefix)/lib
+CLIBS=
+#CLIBS=$(shell ${PYTHON}-config --libs)
+LDFLAGS=$(shell ${PYTHON}-config --ldflags)
+#-L$(shell ${PYTHON}-config --prefix)/lib
+
+#CFLAGS=%CFLAGS%
+#CLIBS=%CLIBS%
+#LDFLAGS=%LDFLAGS%
 
 BUILDBRANCH = $(shell git branch --no-color | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
 ifeq ($(BUILDBRANCH),)
@@ -44,11 +50,11 @@ ${TARGET}: pymex.c sharedfuncs.c commands.c *module.c pymex.h .debug_${DEBUG}
 	@rm -f .debug_0
 	@touch .debug_1
 
-test: ${TARGET} *.py
+test: $(TARGET) *.py
 	${MATLAB_SCRIPT} -nojvm -nodisplay \
 	-r "pyimport nose; exit(unpy(~nose.run()));"
 
-.PHONY: clean
+.PHONY: clean test
 
 clean:
 	rm -f .debug_* pymex.mex*

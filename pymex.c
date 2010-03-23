@@ -5,6 +5,7 @@
    or do `c = pymex` for a list. */
 #include "pymex.h"
 #include <mex.h>
+#include <dlfcn.h>
 #define XMACRO_DEFS "commands.c"
 
 /* Macros used during x-macro expansion. */
@@ -68,6 +69,21 @@ static void ExitFcn(void) {
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (!Py_IsInitialized()) {
+    /* 
+       This dlopen is currently needed because I have
+       recently been unable to import python shared 
+       library modules (like, say, numpy). I spent half
+       a day staring at ld's manpage and trying various
+       combinations to no avail. I even managed to compile
+       against the static libpython2.6-pic.a and could
+       verify the presence and globalness of the symbols,
+       but could not determine a way to get the loaded
+       libraries to actually use them. 
+
+       Should probably make this line configurable in the
+       makefile... later.
+     */
+    dlopen("libpython2.6.so", RTLD_LAZY | RTLD_GLOBAL);
     Py_Initialize();
     PYMEX_DEBUG("[python: initialized]\n");
     initmexmodule();
