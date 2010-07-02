@@ -184,6 +184,7 @@ PYMEX(TO_PYOBJECT, 1,1,
 	plhs[0] = box(Any_mxArray_to_PyObject(prhs[0]));
       })
 
+#if PYMEX_DEBUG_FLAG
 PYMEX(CALL, 2,3, 
       "Calls a callable python object. In addition to the "
       "object itself, the second argument is a cell array or tuple "
@@ -223,6 +224,33 @@ PYMEX(CALL, 2,3,
 	PyObject *result = PyObject_Call(callobj, args, kwargs);
 	plhs[0] = box(result);
       })
+#else
+PYMEX(CALL, 2,3, 
+      "Calls a callable python object. In addition to the "
+      "object itself, the second argument is a cell array or tuple "
+      "of arguments. An optional third argument is a dict of keyword arguments. "
+      "No output unpacking is done. The standard object wrapper class implements that.",
+      {
+	PyObject *callobj = unbox(prhs[0]);
+	if (!PyCallable_Check(callobj))
+	  mexErrMsgIdAndTxt("python:NotCallable", "tried to call object which is not callable.");
+	PyObject *args = NULL;
+	if (mxIsCell(prhs[1]))
+	  args = mxCell_to_PyTuple(prhs[1]);
+	else
+	  args = unbox(prhs[1]);
+	if (!args || !PyTuple_Check(args))
+	  mexErrMsgIdAndTxt("python:NotTuple", "args must be a tuple");
+	PyObject *kwargs = NULL;
+	if (nrhs > 2) {
+	  kwargs = unbox(prhs[2]);
+	  if (kwargs && !PyDict_Check(kwargs))
+	    mexErrMsgIdAndTxt("python:NoKWargs", "kwargs must be a dict or null");
+	}
+	PyObject *result = PyObject_Call(callobj, args, kwargs);
+	plhs[0] = box(result);
+      })
+#endif
 
 PYMEX(IS_CALLABLE, 1,1, 
       "Tests the object to see if it is callable.",
