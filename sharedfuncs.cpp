@@ -125,7 +125,8 @@ mxArray *box (PyObject *pyobj) {
   if (!boxed) return NULL;
   if (pyobj) mexLock();
   mxArray *ptr_field = mxGetProperty(boxed, 0, "pointer");
-  void **ptr = mxGetData(ptr_field);
+  void *ptr_one = mxGetData(ptr_field);
+  void **ptr = &ptr_one;
   *ptr = (void*) pyobj;
   mxSetProperty(boxed, 0, "pointer", ptr_field);
   return boxed;
@@ -145,7 +146,8 @@ PyObject *unbox (const mxArray *mxobj) {
     return PyErr_Format(MATLABError, "Unboxed pointer is null.");
   }
   else {
-    void **ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
+    void *ptr_one = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
+    void **ptr = &ptr_one;
     return (PyObject *) *ptr;
   }
 }
@@ -168,7 +170,8 @@ PyObject *unboxn (const mxArray *mxobj) {
    it does not check this before doing the mxGetProperty
  */
 bool mxIsPyNull (const mxArray *mxobj) {
-  void **ptr = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
+  void *ptr_one = mxGetData(mxGetProperty(mxobj, 0, "pointer"));
+  void **ptr = &ptr_one;
   return !*ptr;
 }
 
