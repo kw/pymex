@@ -2,8 +2,8 @@
    For full license details, see the LICENSE file. */
 
 #define MXMODULE
-#import "pymex.h"
-#import "structmember.h"
+#include "pymex.h"
+#include "structmember.h"
 
 static PyObject *dowrap(PyObject *cobj) {
   PyObject *nargs = PyTuple_New(0);
