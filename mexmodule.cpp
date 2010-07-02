@@ -142,11 +142,7 @@ static PyMethodDef mex_methods[] = {
 #endif
 PyMODINIT_FUNC initmexmodule(void) {
   PyObject *m = Py_InitModule3("mex", mex_methods, 
-    #if MATLAB_MEX_FILE
-    "MATLAB Extension API module"
-    #else
     "MATLAB Extension API module (only available inside MATLAB)"
-    #endif
 			       );
   if (!m) return;
 
