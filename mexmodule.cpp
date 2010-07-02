@@ -88,13 +88,13 @@ static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
   for (i=0; i<nargin; i++) {
     inargs[i] = Any_PyObject_to_mxArray(PyTuple_GetItem(args, i));
   }
-  delete [] inargs;
   int tupleout = nargout >= 0;
   if (nargout < 0) nargout = 1;
   mxArray **outargs;
   outargs = new mxArray*[nargout];
   mxArray *err = mexCallMATLABWithTrap(nargout, outargs, 
 				       nargin, inargs, "feval");
+  delete [] inargs;
   if (err) {
     delete [] outargs;
     return _raiselasterror(NULL);
