@@ -21,7 +21,8 @@ static PyObject *dowrap(PyObject *cobj) {
 
 #define DIMS_FROM_SEQ(A)						\
   mwSize ndim = PySequence_Size(A);					\
-  mwSize dims[ndim];							\
+  mwSize *dims; 							\
+  dims = new mwSize[ndim];						\
   mwSize i;								\
   for (i=0; i < ndim; i++) {						\
     PyObject *item = PySequence_GetItem(A, i);				\
@@ -50,6 +51,7 @@ static PyObject *CreateCellArray(PyObject *self, PyObject *args, PyObject *kw) {
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray *cell = mxCreateCellArray(ndim, dims);
+  delete [] dims;
   if (wrap)    
     return dowrap(mxArrayPtr_New(cell));
   else
@@ -70,6 +72,7 @@ static PyObject *CreateNumericArray(PyObject *self, PyObject *args, PyObject *kw
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray *array = mxCreateNumericArray(ndim, dims, class, complexity);
+  delete [] dims;
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
@@ -88,6 +91,7 @@ static PyObject *CreateStructArray(PyObject *self, PyObject *args, PyObject *kw)
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray *array = mxCreateStructArray(ndim, dims, 0, NULL);
+  delete [] dims;
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
@@ -106,6 +110,7 @@ static PyObject *CreateCharArray(PyObject *self, PyObject *args, PyObject *kw) {
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
   mxArray *array = mxCreateCharArray(ndim, dims);
+  delete [] dims;
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
   else
