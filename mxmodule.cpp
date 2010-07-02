@@ -61,17 +61,17 @@ static PyObject *CreateCellArray(PyObject *self, PyObject *args, PyObject *kw) {
 static PyObject *CreateNumericArray(PyObject *self, PyObject *args, PyObject *kw) {
   static char *kwlist[] = {"dims", "mxclass", "complexity", "wrap", NULL};
   PyObject *pydims = NULL;
-  mxClassID class = mxDOUBLE_CLASS;
+  mxClassID class_id = mxDOUBLE_CLASS;
   mxComplexity complexity = mxREAL;
   int wrap = 0;
   if (!PyArg_ParseTupleAndKeywords(args, kw, "|Oiii", kwlist, 
-				   &pydims, &class, &complexity, &wrap))
+				   &pydims, &class_id, &complexity, &wrap))
     return NULL;
   if (!pydims) pydims = PyTuple_New(0);
   else Py_INCREF(pydims);
   DIMS_FROM_SEQ(pydims);
   Py_DECREF(pydims);
-  mxArray *array = mxCreateNumericArray(ndim, dims, class, complexity);
+  mxArray *array = mxCreateNumericArray(ndim, dims, class_id, complexity);
   delete [] dims;
   if (wrap)
     return dowrap(mxArrayPtr_New(array));
@@ -230,8 +230,8 @@ static PyObject *mxArray_mxGetClassID(PyObject *self) {
 }
 
 static PyObject *mxArray_mxGetClassName(PyObject *self) {
-  const char *class = mxGetClassName(mxArrayPtr(self));
-  return PyBytes_FromString(class);
+  const char *class_id = mxGetClassName(mxArrayPtr(self));
+  return PyBytes_FromString(class_id);
 }
 
 static PyObject *mxArray_mxCalcSingleSubscript(PyObject *self, PyObject *args) {
