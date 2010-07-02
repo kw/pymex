@@ -82,18 +82,23 @@ static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
     return NULL;
   Py_DECREF(fakeargs);
   int nargin = PySequence_Size(args);  
-  mxArray *inargs[nargin];
+  mxArray **inargs;
+  inargs = new mxArray*[nargin];
   int i;
   for (i=0; i<nargin; i++) {
     inargs[i] = Any_PyObject_to_mxArray(PyTuple_GetItem(args, i));
   }
+  delete [] inargs;
   int tupleout = nargout >= 0;
   if (nargout < 0) nargout = 1;
-  mxArray *outargs[nargout];
+  mxArray **outargs;
+  outargs = new mxArray*[nargout];
   mxArray *err = mexCallMATLABWithTrap(nargout, outargs, 
 				       nargin, inargs, "feval");
-  if (err)
+  if (err) {
+    delete [] outargs;
     return _raiselasterror(NULL);
+  }
   else {
     if (tupleout) {
       PyObject *outseq = PyTuple_New(nargout);
@@ -104,12 +109,16 @@ static PyObject *m_call(PyObject *self, PyObject *args, PyObject *kwargs) {
 			: mxArrayPtr_New(outargs[i])
 			);
       }
+      delete [] outargs;
       return outseq;
     }
-    else
+    else {
+      mxArray *outzero = outargs[0];
+      delete [] outargs;
       return wrap 
-	? Any_mxArray_to_PyObject(outargs[0])
-	: mxArrayPtr_New(outargs[0]);
+	? Any_mxArray_to_PyObject(outzero)
+	: mxArrayPtr_New(outzero);
+    }
   }
 }
 
