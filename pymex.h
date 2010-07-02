@@ -33,9 +33,9 @@
 #endif
 
 #if PYMEX_DEBUG_FLAG
-#define PYMEX_DEBUG(format, args...) mexPrintf(format,##args)
+#define PYMEX_DEBUG(format, ...) mexPrintf(format,__VAR_ARGS__)
 #else
-#define PYMEX_DEBUG(format, args...) /*nop*/
+#define PYMEX_DEBUG(format, ...) /*nop*/
 #endif
 
 mxArray *box(PyObject *pyobj);
