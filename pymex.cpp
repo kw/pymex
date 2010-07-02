@@ -90,7 +90,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
   }
   else if (mxIsNumeric(prhs[0])) {
-    enum PYMEX_COMMAND cmd = (int) mxGetScalar(prhs[0]);
+    enum PYMEX_COMMAND cmd = (PYMEX_COMMAND) (int) mxGetScalar(prhs[0]);
     /* While the numeric command selector is no longer used
        for various reasons, I have left it in since it is
        faster than the string-based command selector and
