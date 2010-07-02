@@ -243,14 +243,17 @@ static PyObject *mxArray_mxCalcSingleSubscript(PyObject *self, PyObject *args) {
 			"Can't calculate %ld-dimensional subscripts for %ld-dimensional array",
 			(long) len, (long) dims);
   }
-  mwIndex subs[len];
+  mwIndex *subs;
+  subs = new mwIndex[len];
   mwIndex i;
   for (i=0; i<len; i++) {
     PyObject *ind = PyNumber_Index(PyTuple_GetItem(args, (Py_ssize_t) i));
     if (PyErr_Occurred()) return NULL;
     subs[i] = (mwIndex) PyLong_AsLong(ind);
   }
-  return PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
+  PyObject *returnobj = PyLong_FromLong(mxCalcSingleSubscript(mxobj, len, subs));
+  delete [] subs;
+  return returnobj;
 }
 
 static PyObject *mxArray_mxGetField(PyObject *self, PyObject *args, PyObject *kw) {
