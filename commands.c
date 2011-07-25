@@ -198,7 +198,7 @@ PYMEX(CALL, 2,3,
 	if (mxIsCell(prhs[1]))
 	  args = mxCell_to_PyTuple(prhs[1]);
 	else
-	  args = unbox(prhs[1]);
+	  args = unboxn(prhs[1]);
 	if (!args || !PyTuple_Check(args))
 	  mexErrMsgIdAndTxt("python:NotTuple", "args must be a tuple");
 	PyObject *kwargs = NULL;
@@ -221,6 +221,7 @@ PYMEX(CALL, 2,3,
 	Py_XDECREF(krepr);
 	PyObject *result = PyObject_Call(callobj, args, kwargs);
 	plhs[0] = box(result);
+	Py_XDECREF(args);
       })
 #else
 PYMEX(CALL, 2,3, 
@@ -236,7 +237,7 @@ PYMEX(CALL, 2,3,
 	if (mxIsCell(prhs[1]))
 	  args = mxCell_to_PyTuple(prhs[1]);
 	else
-	  args = unbox(prhs[1]);
+	  args = unboxn(prhs[1]);
 	if (!args || !PyTuple_Check(args))
 	  mexErrMsgIdAndTxt("python:NotTuple", "args must be a tuple");
 	PyObject *kwargs = NULL;
@@ -247,6 +248,7 @@ PYMEX(CALL, 2,3,
 	}
 	PyObject *result = PyObject_Call(callobj, args, kwargs);
 	plhs[0] = box(result);
+	Py_XDECREF(args);
       })
 #endif
 
