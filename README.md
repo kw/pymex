@@ -47,31 +47,45 @@ For some examples, see `python_example.py` and `matlab_example.py`.
 
 On the MATLAB side, `pyimport` and `pybuiltins` give us access to
 Python modules and builtins. To import a module,
+
     pyimport numpy
+    
 or
+
     np = pyimport('numpy')
+    
 If you use the "command form" to import a submodule, it will change the
 dots into underscores. I'd recommend using the expression form instead.
+
     pyimport mltypes.containers  % produces the variable "mltypes_containers"
 
 Running `pybuiltins` with no arguments
 tries to import all of Python's builtins, which is probably undesirable.
 Provide string arguments to request specific builtins:
+
     pybuiltins list tuple dict
+    
 or
+
     [list, tuple, dict] = pybuiltins('list', 'tuple', 'dict');
+
 Some shortcuts are provided in the 'py' package:
+
     py.tuple(42, 'spam', @plot)
     py.list(1, 2, 3)
     py.dict('spam', 'eggs', 'foo', 'bar')
+
 (note that these shortcuts have different calling conventions
 than the builtins. YMMV)
 
 MATLAB has no keyword arguments, so to pass those to a python function, use the `kw` class:
+
     v = myfunc(a, b, kw('keyword1', 42, 'keyword2', py.None, ...))
+    
 You can provide multiple instances of `kw` if necessary.
 
 To evaluate a python expression using the variables in the current MATLAB workspace, use `py.eval`:
+
     >> x = {'spam', 42, struct('foo','bar'), containers.Map}
     x = 
         'spam'    [42]    [1x1 struct]    [0x1 containers.Map]
@@ -100,12 +114,14 @@ outputs to MATLAB objects, even if they're just wrapped MATLAB
 objects. Use the `unpy` method to coerce.
 
 On the Python side:
+
     from matlab import cell, fprintf, plot, max
 
 MATLAB functions (currently) coerce all arguments to MATLAB
 types when possible, since presumably MATLAB functions don't
 want Python inputs. To request multiple outputs, use the
 'nargout' keyword:
+
     x = numpy.array([1, 2, 4, 0])
     val, ind = matlab.max(x, nargout=2) # ind is 1-based
 
@@ -133,6 +149,7 @@ numeric arrays are subclasses of.
 
 The `_object` class doesn't work particularly well for general MATLAB objects,
 but see `mltypes.containers.Map` for an example of a wrapped MATLAB class:
+
     >> map = containers.Map;
     >> map('foo') = 'bar';
     >> pymap = py(map)
@@ -158,6 +175,7 @@ but see `mltypes.containers.Map` for an example of a wrapped MATLAB class:
 
 The aforementioned `_numeric` class doesn't really do much
 because normal MATLAB numeric arrays work so well with NumPy:
+
     >> x = py.asarray(magic(5)) % or pyimport numpy; numpy.asarray(...)
     x = 
     [[ 17.  24.   1.   8.  15.]
