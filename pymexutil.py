@@ -135,6 +135,12 @@ try:
         See Issue #5
         '''
         self = np.atleast_2d(self)
+        # handle trailing singleton dimensions
+        if self.ndim > 2 and self.shape[-1] == 1:
+            # need to squeeze
+            # should really squeeze only last axis but
+            # axis kw only supported in >1.7.0
+            self = np.squeeze(self)
         mxclass = select_mxclass_by_dtype(self.dtype.type)    
         cobj = mx.create_numeric_array(mxclass = mxclass,
                                        dims = self.shape)
