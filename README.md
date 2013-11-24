@@ -10,7 +10,7 @@ If you're not sure how you got this, the git repository can be found at:
 http://github.com/kw/pymex
 
 See the Issues section near the bottom if you have problems, or send me
-a message on GitHub, or maybe even send me an e-mail (kwatford@cise.ufl.edu)
+a message on GitHub, or maybe even send me an e-mail (kwatford@gmail.com)
 
 # Requirements #
 
